@@ -1,0 +1,98 @@
+import { FileText, Check, MessageSquare, Upload, Clock, Award } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface Activity {
+  id: string;
+  type: 'upload' | 'approval' | 'question' | 'best-practice';
+  title: string;
+  description: string;
+  time: string;
+  user: string;
+}
+
+const activities: Activity[] = [
+  {
+    id: '1',
+    type: 'upload',
+    title: 'New document uploaded',
+    description: 'Safety Guidelines for Roofing Work 2024',
+    time: '10 min ago',
+    user: 'Hans Weber'
+  },
+  {
+    id: '2',
+    type: 'approval',
+    title: 'Document approved',
+    description: 'VOB/B Compliance Checklist',
+    time: '25 min ago',
+    user: 'Anna Schmidt'
+  },
+  {
+    id: '3',
+    type: 'question',
+    title: 'New question posted',
+    description: 'What are the requirements for fire stops in cable penetrations?',
+    time: '1 hour ago',
+    user: 'Thomas Müller'
+  },
+  {
+    id: '4',
+    type: 'best-practice',
+    title: 'Marked as Best Practice',
+    description: 'Concrete Curing Temperature Guidelines',
+    time: '2 hours ago',
+    user: 'System'
+  },
+];
+
+const typeConfig = {
+  upload: { icon: Upload, className: 'bg-primary/10 text-primary' },
+  approval: { icon: Check, className: 'bg-success/10 text-success' },
+  question: { icon: MessageSquare, className: 'bg-info/10 text-info' },
+  'best-practice': { icon: Award, className: 'bg-accent/20 text-accent-foreground' },
+};
+
+export function ActivityFeed() {
+  return (
+    <div className="bg-card rounded-2xl border border-border p-5">
+      <h3 className="font-semibold text-foreground mb-4">Recent Activity</h3>
+      
+      <div className="space-y-4">
+        {activities.map((activity, index) => {
+          const config = typeConfig[activity.type];
+          const Icon = config.icon;
+          
+          return (
+            <div 
+              key={activity.id}
+              className="flex gap-3 animate-fade-in"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className={cn(
+                "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                config.className
+              )}>
+                <Icon className="w-4 h-4" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
+                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>{activity.time}</span>
+                  <span>•</span>
+                  <span>{activity.user}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      <button className="w-full mt-4 text-sm text-primary hover:text-primary/80 font-medium transition-colors">
+        View all activity
+      </button>
+    </div>
+  );
+}
