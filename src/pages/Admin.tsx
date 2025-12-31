@@ -28,8 +28,8 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <ShieldAlert className="w-16 h-16 text-destructive" />
-        <h1 className="text-2xl font-bold">Access Denied</h1>
-        <p className="text-muted-foreground">Only administrators can access this page.</p>
+        <h1 className="text-2xl font-bold">Zugriff verweigert</h1>
+        <p className="text-muted-foreground">Nur Administratoren können auf diese Seite zugreifen.</p>
       </div>
     );
   }
@@ -37,8 +37,8 @@ export default function Admin() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <p className="text-muted-foreground">Manage users and system settings</p>
+        <h1 className="text-3xl font-bold">Admin-Bereich</h1>
+        <p className="text-muted-foreground">Benutzer und Systemeinstellungen verwalten</p>
       </div>
       <AdminUserManagement />
     </div>

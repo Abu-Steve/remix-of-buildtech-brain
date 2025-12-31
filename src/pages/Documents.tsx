@@ -12,6 +12,13 @@ import type { Document, Tag } from '@/types';
 type ViewMode = 'grid' | 'list';
 type FilterStatus = 'all' | 'pending' | 'approved' | 'best-practice';
 
+const statusLabels: Record<FilterStatus, string> = {
+  all: 'Alle',
+  pending: 'Ausstehend',
+  approved: 'Genehmigt',
+  'best-practice': 'Best Practice',
+};
+
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -22,7 +29,7 @@ export default function Documents() {
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
 
-  // Transform database documents to UI format
+  // Datenbank-Dokumente in UI-Format umwandeln
   const documents: Document[] = (documentsData || []).map((doc: any) => ({
     id: doc.id,
     title: doc.title,
@@ -35,10 +42,10 @@ export default function Documents() {
       color: dt.tags?.color,
       count: 0,
     })).filter((t: any) => t.id) || [],
-    uploadedBy: doc.uploader?.name || 'Unknown',
+    uploadedBy: doc.uploader?.name || 'Unbekannt',
     uploadedAt: new Date(doc.created_at),
     version: doc.version || '1.0',
-    size: doc.file_size || 'Unknown',
+    size: doc.file_size || 'Unbekannt',
     approvedBy: doc.approved_by,
     approvedAt: doc.approved_at ? new Date(doc.approved_at) : undefined,
     rating: doc.rating,
@@ -46,7 +53,7 @@ export default function Documents() {
     isCached: doc.is_cached,
   }));
 
-  // Transform tags with counts
+  // Tags mit Anzahl transformieren
   const tags: Tag[] = tagsData.map((tag) => ({
     id: tag.id,
     name: tag.name,
@@ -74,26 +81,26 @@ export default function Documents() {
 
   return (
     <AppLayout>
-      {/* Header */}
+      {/* Kopfzeile */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-            Documents
+            Dokumente
           </h1>
           <p className="text-muted-foreground">
-            {filteredDocuments.length} documents found
+            {filteredDocuments.length} Dokumente gefunden
           </p>
         </div>
         
         <Button variant="hero" onClick={() => setIsUploadModalOpen(true)}>
           <Plus className="w-4 h-4" />
-          Upload Document
+          Dokument hochladen
         </Button>
       </div>
 
-      {/* Search and filters */}
+      {/* Suche und Filter */}
       <div className="space-y-4 mb-6">
-        {/* Search bar */}
+        {/* Suchleiste */}
         <div className="flex items-center gap-3">
           <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-secondary rounded-xl">
             <Search className="w-5 h-5 text-muted-foreground" />
@@ -101,7 +108,7 @@ export default function Documents() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, description, or tags..."
+              placeholder="Nach Titel, Beschreibung oder Tags suchen..."
               className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
@@ -124,7 +131,7 @@ export default function Documents() {
           </div>
         </div>
 
-        {/* Status filters */}
+        {/* Status-Filter */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Status:</span>
           {(['all', 'pending', 'approved', 'best-practice'] as FilterStatus[]).map((status) => (
@@ -133,14 +140,13 @@ export default function Documents() {
               variant={filterStatus === status ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilterStatus(status)}
-              className="capitalize"
             >
-              {status === 'all' ? 'All' : status.replace('-', ' ')}
+              {statusLabels[status]}
             </Button>
           ))}
         </div>
 
-        {/* Tag filters */}
+        {/* Tag-Filter */}
         {tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground">Tags:</span>
@@ -159,14 +165,14 @@ export default function Documents() {
         )}
       </div>
 
-      {/* Loading state */}
+      {/* Ladezustand */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       )}
 
-      {/* Documents grid/list */}
+      {/* Dokumente Raster/Liste */}
       {!isLoading && (
         <div className={cn(
           viewMode === 'grid' 
@@ -185,23 +191,23 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Leerer Zustand */}
       {!isLoading && filteredDocuments.length === 0 && (
         <div className="text-center py-16">
           <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No documents found</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Keine Dokumente gefunden</h3>
           <p className="text-muted-foreground mb-6">
             {documents.length === 0 
-              ? "No documents have been uploaded yet. Be the first to share your knowledge!"
-              : "Try adjusting your search or filter criteria."
+              ? "Es wurden noch keine Dokumente hochgeladen. Seien Sie der Erste, der sein Wissen teilt!"
+              : "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen."
             }
           </p>
           {documents.length === 0 ? (
             <Button variant="hero" onClick={() => setIsUploadModalOpen(true)}>
               <Plus className="w-4 h-4" />
-              Upload First Document
+              Erstes Dokument hochladen
             </Button>
           ) : (
             <Button variant="outline" onClick={() => {
@@ -209,13 +215,13 @@ export default function Documents() {
               setFilterStatus('all');
               setSelectedTags([]);
             }}>
-              Clear all filters
+              Alle Filter löschen
             </Button>
           )}
         </div>
       )}
 
-      {/* Upload Modal */}
+      {/* Upload-Modal */}
       <UploadModal 
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
