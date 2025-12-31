@@ -212,7 +212,7 @@ export function useUploadDocument() {
 
 interface ApproveDocumentParams {
   documentId: string;
-  groupId: string;
+  groupId: string | null;
   status: 'approved' | 'best-practice' | 'rejected';
 }
 
