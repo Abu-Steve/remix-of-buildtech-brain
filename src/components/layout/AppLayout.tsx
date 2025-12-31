@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   FileText, 
@@ -13,8 +13,10 @@ import {
   User,
   Download,
   Wifi,
-  WifiOff
+  WifiOff,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +35,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,7 +125,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* User section */}
-        <div className="absolute bottom-4 left-4 right-4">
+        <div className="absolute bottom-4 left-4 right-4 space-y-2">
           <Link 
             to="/settings"
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary transition-colors"
@@ -125,11 +134,19 @@ export function AppLayout({ children }: AppLayoutProps) {
               <User className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Max Müller</p>
-              <p className="text-xs text-muted-foreground">Champion</p>
+              <p className="text-sm font-medium text-foreground truncate">{user?.email || 'User'}</p>
+              <p className="text-xs text-muted-foreground">Settings</p>
             </div>
             <Settings className="w-4 h-4 text-muted-foreground" />
           </Link>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start gap-3 px-4 py-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </Button>
         </div>
       </aside>
 
