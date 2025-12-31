@@ -26,9 +26,9 @@ interface AppLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Documents', href: '/documents', icon: FileText },
-  { name: 'AI Chat', href: '/chat', icon: MessageSquare },
-  { name: 'Q&A Forum', href: '/forum', icon: HelpCircle },
+  { name: 'Dokumente', href: '/documents', icon: FileText },
+  { name: 'KI-Chat', href: '/chat', icon: MessageSquare },
+  { name: 'Fragen & Antworten', href: '/forum', icon: HelpCircle },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -45,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile sidebar backdrop */}
+      {/* Mobile Sidebar Hintergrund */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
@@ -53,7 +53,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Seitenleiste */}
       <aside className={cn(
         "fixed top-0 left-0 z-50 h-full w-72 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -66,7 +66,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">BuildTech</h1>
-              <p className="text-xs text-muted-foreground">Knowledge Hub</p>
+              <p className="text-xs text-muted-foreground">Wissensdatenbank</p>
             </div>
           </Link>
           <Button 
@@ -102,7 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
 
-        {/* Offline indicator */}
+        {/* Online-Anzeige */}
         <div className="absolute bottom-32 left-4 right-4">
           <div className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-xl text-sm",
@@ -118,13 +118,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             ) : (
               <>
                 <WifiOff className="w-4 h-4" />
-                <span>Offline Mode</span>
+                <span>Offline-Modus</span>
               </>
             )}
           </div>
         </div>
 
-        {/* User section */}
+        {/* Benutzerbereich */}
         <div className="absolute bottom-4 left-4 right-4 space-y-2">
           <Link 
             to="/settings"
@@ -134,8 +134,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               <User className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{user?.email || 'User'}</p>
-              <p className="text-xs text-muted-foreground">Settings</p>
+              <p className="text-sm font-medium text-foreground truncate">{user?.email || 'Benutzer'}</p>
+              <p className="text-xs text-muted-foreground">Einstellungen</p>
             </div>
             <Settings className="w-4 h-4 text-muted-foreground" />
           </Link>
@@ -145,14 +145,14 @@ export function AppLayout({ children }: AppLayoutProps) {
             onClick={handleSignOut}
           >
             <LogOut className="w-5 h-5" />
-            Sign Out
+            Abmelden
           </Button>
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Hauptinhalt */}
       <div className="lg:pl-72">
-        {/* Top header */}
+        {/* Kopfzeile */}
         <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
             <div className="flex items-center gap-4">
@@ -165,12 +165,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <Menu className="w-5 h-5" />
               </Button>
               
-              {/* Search */}
+              {/* Suche */}
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-secondary rounded-xl w-64 lg:w-80">
                 <Search className="w-4 h-4 text-muted-foreground" />
                 <input 
                   type="text"
-                  placeholder="Search documents..."
+                  placeholder="Dokumente suchen..."
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
@@ -189,7 +189,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Seiteninhalt */}
         <main className="p-4 lg:p-6">
           {children}
         </main>

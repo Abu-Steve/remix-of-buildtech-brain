@@ -22,11 +22,11 @@ function timeAgo(dateIso?: string) {
   const date = new Date(dateIso);
   const diff = Date.now() - date.getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) return `vor ${minutes} Min.`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hours ago`;
+  if (hours < 24) return `vor ${hours} Std.`;
   const days = Math.floor(hours / 24);
-  return `${days} days ago`;
+  return `vor ${days} Tagen`;
 }
 
 export function PendingApprovals() {
@@ -47,21 +47,20 @@ export function PendingApprovals() {
 
   const openReview = (doc: PendingDoc) => {
     setActiveDoc(doc);
-    // Default: if doc already has group_id use it, else default to General (null)
     setSelectedGroupId(doc.group_id ?? '__general__');
   };
 
   const handleDecision = async (status: 'approved' | 'best-practice' | 'rejected') => {
     if (!activeDoc) return;
     if (!isChampion) {
-      toast.error('Only Champions can approve documents');
+      toast.error('Nur Champions können Dokumente genehmigen');
       return;
     }
 
     const groupId = selectedGroupId === '__general__' ? null : selectedGroupId;
 
     if (status !== 'rejected' && !groupId && selectedGroupId !== '__general__') {
-      toast.error('Please select a company or choose General');
+      toast.error('Bitte wählen Sie eine Firma oder Allgemein');
       return;
     }
 
@@ -75,26 +74,26 @@ export function PendingApprovals() {
   };
 
   return (
-    <section aria-label="Pending approvals" className="bg-card rounded-2xl border border-border p-5">
+    <section aria-label="Ausstehende Genehmigungen" className="bg-card rounded-2xl border border-border p-5">
       <header className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-foreground">Pending Approvals</h2>
+        <h2 className="font-semibold text-foreground">Ausstehende Genehmigungen</h2>
         <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/30">
-          {pendingDocs.length} pending
+          {pendingDocs.length} ausstehend
         </Badge>
       </header>
 
       {!isChampion && (
         <p className="text-sm text-muted-foreground">
-          You don’t have approval permissions.
+          Sie haben keine Genehmigungsberechtigung.
         </p>
       )}
 
       {error && (
-        <p className="text-sm text-destructive">Could not load approvals.</p>
+        <p className="text-sm text-destructive">Genehmigungen konnten nicht geladen werden.</p>
       )}
 
       {isLoading ? (
-        <div className="py-6 text-sm text-muted-foreground">Loading pending approvals…</div>
+        <div className="py-6 text-sm text-muted-foreground">Ausstehende Genehmigungen werden geladen…</div>
       ) : (
         <ScrollArea className={showAll ? 'h-[28rem]' : ''}>
           <div className="space-y-3 pr-2">
@@ -112,7 +111,7 @@ export function PendingApprovals() {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-foreground truncate">{doc.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <span>{doc.uploader?.name || 'Unknown'}</span>
+                      <span>{doc.uploader?.name || 'Unbekannt'}</span>
                       <span>•</span>
                       <Clock className="w-3 h-3" />
                       <span>{timeAgo(doc.created_at)}</span>
@@ -134,7 +133,7 @@ export function PendingApprovals() {
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
                   <Button size="sm" variant="ghost" className="flex-1 h-9" onClick={() => openReview(doc)}>
                     <Eye className="w-4 h-4 mr-1" />
-                    Review
+                    Prüfen
                   </Button>
                   <Button
                     size="sm"
@@ -163,7 +162,7 @@ export function PendingApprovals() {
             ))}
 
             {pendingDocs.length === 0 && (
-              <div className="py-6 text-sm text-muted-foreground">No pending approvals.</div>
+              <div className="py-6 text-sm text-muted-foreground">Keine ausstehenden Genehmigungen.</div>
             )}
           </div>
         </ScrollArea>
@@ -175,16 +174,16 @@ export function PendingApprovals() {
           className="w-full mt-4 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
           onClick={() => setShowAll((s) => !s)}
         >
-          {showAll ? 'Show less' : `View all pending (${pendingDocs.length})`}
+          {showAll ? 'Weniger anzeigen' : `Alle ausstehenden anzeigen (${pendingDocs.length})`}
         </button>
       )}
 
       <Dialog open={!!activeDoc} onOpenChange={(open) => !open && setActiveDoc(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Review document</DialogTitle>
+            <DialogTitle>Dokument prüfen</DialogTitle>
             <DialogDescription>
-              Choose the company (or General) and approve or reject.
+              Wählen Sie die Firma (oder Allgemein) und genehmigen oder lehnen Sie ab.
             </DialogDescription>
           </DialogHeader>
 
@@ -197,18 +196,18 @@ export function PendingApprovals() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Company</p>
+              <p className="text-sm font-medium text-foreground">Firma</p>
               <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select company..." />
+                  <SelectValue placeholder="Firma auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__general__">General (all companies)</SelectItem>
+                  <SelectItem value="__general__">Allgemein (alle Firmen)</SelectItem>
                   <ScrollArea className="h-56">
                     {groups.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
                         {g.name}
-                        {g.is_global ? ' (All access)' : ''}
+                        {g.is_global ? ' (Alle Zugriff)' : ''}
                       </SelectItem>
                     ))}
                   </ScrollArea>
@@ -224,7 +223,7 @@ export function PendingApprovals() {
                 disabled={!isChampion || approveMutation.isPending}
               >
                 <Check className="w-4 h-4" />
-                Approve
+                Genehmigen
               </Button>
               <Button
                 variant="secondary"
@@ -232,7 +231,7 @@ export function PendingApprovals() {
                 onClick={() => handleDecision('best-practice')}
                 disabled={!isChampion || approveMutation.isPending}
               >
-                Mark Best Practice
+                Als Best Practice markieren
               </Button>
               <Button
                 variant="outline"
@@ -241,7 +240,7 @@ export function PendingApprovals() {
                 disabled={!isChampion || approveMutation.isPending}
               >
                 <X className="w-4 h-4" />
-                Reject
+                Ablehnen
               </Button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, MessageSquare, Eye, CheckCircle, Clock, Filter, TrendingUp } from 'lucide-react';
+import { Plus, Search, MessageSquare, Eye, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,11 +25,11 @@ interface ForumQuestion {
 const mockQuestions: ForumQuestion[] = [
   {
     id: '1',
-    title: 'What are the requirements for fire stops in cable penetrations?',
-    content: 'We are installing electrical cables through fire-rated walls. What certifications do we need for the fire stop materials?',
-    author: { name: 'Thomas Müller', role: 'Electrician' },
+    title: 'Welche Anforderungen gelten für Brandschotts bei Kabeldurchführungen?',
+    content: 'Wir installieren elektrische Kabel durch brandgeschützte Wände. Welche Zertifizierungen benötigen wir für die Brandschottmaterialien?',
+    author: { name: 'Thomas Müller', role: 'Elektriker' },
     createdAt: new Date('2024-01-17T10:30:00'),
-    tags: [{ name: 'Fire Safety', color: '#ef4444' }, { name: 'Electrical', color: '#f59e0b' }],
+    tags: [{ name: 'Brandschutz', color: '#ef4444' }, { name: 'Elektrik', color: '#f59e0b' }],
     answers: 5,
     views: 127,
     isResolved: false,
@@ -37,44 +37,44 @@ const mockQuestions: ForumQuestion[] = [
   },
   {
     id: '2',
-    title: 'Concrete curing in winter conditions - best practices?',
-    content: 'We have a concrete pour scheduled for next week with temperatures expected around 2°C. What precautions should we take?',
-    author: { name: 'Hans Weber', role: 'Site Manager' },
+    title: 'Betonhärtung bei Winterbedingungen - Best Practices?',
+    content: 'Wir haben einen Betonguß für nächste Woche geplant bei erwarteten Temperaturen um 2°C. Welche Vorsichtsmaßnahmen sollten wir treffen?',
+    author: { name: 'Hans Weber', role: 'Bauleiter' },
     createdAt: new Date('2024-01-16T14:15:00'),
-    tags: [{ name: 'Concrete', color: '#6b7280' }, { name: 'Weather', color: '#06b6d4' }],
+    tags: [{ name: 'Beton', color: '#6b7280' }, { name: 'Wetter', color: '#06b6d4' }],
     answers: 8,
     views: 234,
     isResolved: true,
   },
   {
     id: '3',
-    title: 'DIN 4109 sound insulation requirements for party walls',
-    content: 'What is the minimum R\'w value required for party walls in residential buildings according to current standards?',
-    author: { name: 'Maria Berger', role: 'Architect' },
+    title: 'DIN 4109 Schallschutzanforderungen für Trennwände',
+    content: 'Welcher Mindest-R\'w-Wert ist für Trennwände in Wohngebäuden nach aktuellen Normen erforderlich?',
+    author: { name: 'Maria Berger', role: 'Architektin' },
     createdAt: new Date('2024-01-15T09:00:00'),
-    tags: [{ name: 'Sound Insulation', color: '#8b5cf6' }, { name: 'Building Code', color: '#3b82f6' }],
+    tags: [{ name: 'Schallschutz', color: '#8b5cf6' }, { name: 'Bauvorschriften', color: '#3b82f6' }],
     answers: 3,
     views: 89,
     isResolved: true,
   },
   {
     id: '4',
-    title: 'Height safety systems for flat roof maintenance access',
-    content: 'What permanent fall protection systems are recommended for regular roof maintenance access points?',
-    author: { name: 'Klaus Fischer', role: 'Safety Officer' },
+    title: 'Absturzsicherungssysteme für Flachdachwartungszugang',
+    content: 'Welche permanenten Absturzsicherungen werden für regelmäßige Dachwartungszugangspunkte empfohlen?',
+    author: { name: 'Klaus Fischer', role: 'Sicherheitsbeauftragter' },
     createdAt: new Date('2024-01-14T16:45:00'),
-    tags: [{ name: 'Safety', color: '#ef4444' }, { name: 'Roofing', color: '#10b981' }],
+    tags: [{ name: 'Sicherheit', color: '#ef4444' }, { name: 'Dacharbeiten', color: '#10b981' }],
     answers: 6,
     views: 156,
     isResolved: false,
   },
   {
     id: '5',
-    title: 'VOB warranty periods for different building components',
-    content: 'Can someone clarify the different warranty periods under VOB for structural work vs. finishing work?',
-    author: { name: 'Peter Hoffmann', role: 'Project Manager' },
+    title: 'VOB-Gewährleistungsfristen für verschiedene Baukomponenten',
+    content: 'Kann jemand die unterschiedlichen Gewährleistungsfristen nach VOB für Rohbauarbeiten vs. Ausbauarbeiten erklären?',
+    author: { name: 'Peter Hoffmann', role: 'Projektmanager' },
     createdAt: new Date('2024-01-13T11:20:00'),
-    tags: [{ name: 'VOB', color: '#3b82f6' }, { name: 'Legal', color: '#ec4899' }],
+    tags: [{ name: 'VOB', color: '#3b82f6' }, { name: 'Recht', color: '#ec4899' }],
     answers: 4,
     views: 203,
     isResolved: true,
@@ -82,6 +82,13 @@ const mockQuestions: ForumQuestion[] = [
 ];
 
 type FilterType = 'all' | 'unanswered' | 'resolved' | 'hot';
+
+const filterLabels: Record<FilterType, string> = {
+  all: 'Alle',
+  hot: 'Beliebt',
+  unanswered: 'Unbeantwortet',
+  resolved: 'Gelöst',
+};
 
 export default function Forum() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,33 +108,33 @@ export default function Forum() {
     const now = new Date();
     const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffHours < 1) return 'Gerade eben';
+    if (diffHours < 24) return `vor ${diffHours} Std.`;
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < 7) return `vor ${diffDays} Tagen`;
     return date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
   };
 
   return (
     <AppLayout>
-      {/* Header */}
+      {/* Kopfzeile */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-            Q&A Forum
+            Fragen & Antworten
           </h1>
           <p className="text-muted-foreground">
-            Ask questions and share knowledge with your colleagues
+            Stellen Sie Fragen und teilen Sie Wissen mit Ihren Kollegen
           </p>
         </div>
         
         <Button variant="hero">
           <Plus className="w-4 h-4" />
-          Ask Question
+          Frage stellen
         </Button>
       </div>
 
-      {/* Search and filters */}
+      {/* Suche und Filter */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center gap-2 px-4 py-3 bg-secondary rounded-xl">
           <Search className="w-5 h-5 text-muted-foreground" />
@@ -135,7 +142,7 @@ export default function Forum() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search questions..."
+            placeholder="Fragen suchen..."
             className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
@@ -147,16 +154,15 @@ export default function Forum() {
               variant={filter === f ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter(f)}
-              className="capitalize"
             >
               {f === 'hot' && <TrendingUp className="w-3 h-3 mr-1" />}
-              {f}
+              {filterLabels[f]}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Questions list */}
+      {/* Fragenliste */}
       <div className="space-y-3">
         {filteredQuestions.map((question, index) => (
           <div 
@@ -165,7 +171,7 @@ export default function Forum() {
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex items-start gap-4">
-              {/* Stats */}
+              {/* Statistiken */}
               <div className="hidden sm:flex flex-col items-center gap-1 text-center min-w-[60px]">
                 <div className={cn(
                   "text-lg font-bold",
@@ -173,10 +179,10 @@ export default function Forum() {
                 )}>
                   {question.answers}
                 </div>
-                <div className="text-xs text-muted-foreground">answers</div>
+                <div className="text-xs text-muted-foreground">Antworten</div>
               </div>
 
-              {/* Content */}
+              {/* Inhalt */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 mb-2">
                   {question.isResolved && (
@@ -211,11 +217,11 @@ export default function Forum() {
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
                       <MessageSquare className="w-3 h-3" />
-                      {question.answers} answers
+                      {question.answers} Antworten
                     </span>
                     <span className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />
-                      {question.views} views
+                      {question.views} Aufrufe
                     </span>
                   </div>
                   
@@ -234,19 +240,19 @@ export default function Forum() {
         ))}
       </div>
 
-      {/* Empty state */}
+      {/* Leerer Zustand */}
       {filteredQuestions.length === 0 && (
         <div className="text-center py-16">
           <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No questions found</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Keine Fragen gefunden</h3>
           <p className="text-muted-foreground mb-6">
-            Try adjusting your search or be the first to ask!
+            Passen Sie Ihre Suche an oder stellen Sie die erste Frage!
           </p>
           <Button variant="hero">
             <Plus className="w-4 h-4" />
-            Ask a Question
+            Frage stellen
           </Button>
         </div>
       )}

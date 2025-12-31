@@ -14,33 +14,33 @@ const activities: Activity[] = [
   {
     id: '1',
     type: 'upload',
-    title: 'New document uploaded',
-    description: 'Safety Guidelines for Roofing Work 2024',
-    time: '10 min ago',
+    title: 'Neues Dokument hochgeladen',
+    description: 'Sicherheitsrichtlinien für Dacharbeiten 2024',
+    time: 'vor 10 Min.',
     user: 'Hans Weber'
   },
   {
     id: '2',
     type: 'approval',
-    title: 'Document approved',
-    description: 'VOB/B Compliance Checklist',
-    time: '25 min ago',
+    title: 'Dokument genehmigt',
+    description: 'VOB/B Konformitäts-Checkliste',
+    time: 'vor 25 Min.',
     user: 'Anna Schmidt'
   },
   {
     id: '3',
     type: 'question',
-    title: 'New question posted',
-    description: 'What are the requirements for fire stops in cable penetrations?',
-    time: '1 hour ago',
+    title: 'Neue Frage gestellt',
+    description: 'Welche Anforderungen gelten für Brandschotts bei Kabeldurchführungen?',
+    time: 'vor 1 Std.',
     user: 'Thomas Müller'
   },
   {
     id: '4',
     type: 'best-practice',
-    title: 'Marked as Best Practice',
-    description: 'Concrete Curing Temperature Guidelines',
-    time: '2 hours ago',
+    title: 'Als Best Practice markiert',
+    description: 'Betonhärtung Temperaturrichtlinien',
+    time: 'vor 2 Std.',
     user: 'System'
   },
 ];
@@ -55,7 +55,7 @@ const typeConfig = {
 export function ActivityFeed() {
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
-      <h3 className="font-semibold text-foreground mb-4">Recent Activity</h3>
+      <h3 className="font-semibold text-foreground mb-4">Letzte Aktivitäten</h3>
       
       <div className="space-y-4">
         {activities.map((activity, index) => {
@@ -91,7 +91,7 @@ export function ActivityFeed() {
       </div>
       
       <button className="w-full mt-4 text-sm text-primary hover:text-primary/80 font-medium transition-colors">
-        View all activity
+        Alle Aktivitäten anzeigen
       </button>
     </div>
   );

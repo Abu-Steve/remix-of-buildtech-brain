@@ -36,14 +36,14 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
   };
 
   const quickQuestions = [
-    "What are the safety requirements for scaffolding?",
-    "Explain the VOB regulations for concrete work",
-    "Best practices for waterproofing basements",
+    "Welche Sicherheitsanforderungen gelten für Gerüste?",
+    "Erkläre die VOB-Vorschriften für Betonarbeiten",
+    "Best Practices für Kellerabdichtung",
   ];
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Messages area */}
+      {/* Nachrichtenbereich */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -51,16 +51,16 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
               <Sparkles className="w-8 h-8 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              BuildTech AI Assistant
+              BuildTech KI-Assistent
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md">
-              Ask me anything about construction standards, regulations, or best practices. 
-              I'll provide answers based on our verified knowledge base.
+              Fragen Sie mich zu Baunormen, Vorschriften oder Best Practices. 
+              Ich gebe Antworten basierend auf unserer verifizierten Wissensdatenbank.
             </p>
             
-            {/* Quick questions */}
+            {/* Schnellfragen */}
             <div className="space-y-2 w-full max-w-lg">
-              <p className="text-sm font-medium text-muted-foreground mb-3">Try asking:</p>
+              <p className="text-sm font-medium text-muted-foreground mb-3">Probieren Sie:</p>
               {quickQuestions.map((question, index) => (
                 <button
                   key={index}
@@ -81,14 +81,14 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
         {isLoading && (
           <div className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Searching knowledge base...</span>
+            <span className="text-sm">Durchsuche Wissensdatenbank...</span>
           </div>
         )}
         
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
+      {/* Eingabebereich */}
       <div className="border-t border-border bg-card p-4 lg:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="relative">
@@ -97,7 +97,7 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about construction standards, regulations, or best practices..."
+              placeholder="Fragen Sie zu Baunormen, Vorschriften oder Best Practices..."
               className="min-h-[56px] max-h-[200px] pr-14 resize-none rounded-xl bg-secondary border-0 focus-visible:ring-2 focus-visible:ring-primary"
               rows={1}
             />
@@ -112,7 +112,7 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            AI responses are based on BuildTech's verified knowledge base. Always verify critical information.
+            KI-Antworten basieren auf der verifizierten BuildTech-Wissensdatenbank. Überprüfen Sie kritische Informationen immer.
           </p>
         </div>
       </div>
@@ -136,13 +136,13 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           : "bg-gradient-hero"
       )}>
         {isUser ? (
-          <span className="text-sm font-medium text-foreground">MM</span>
+          <span className="text-sm font-medium text-foreground">Sie</span>
         ) : (
           <Sparkles className="w-4 h-4 text-primary-foreground" />
         )}
       </div>
 
-      {/* Message content */}
+      {/* Nachrichteninhalt */}
       <div className={cn(
         "max-w-[80%] space-y-3",
         isUser ? "items-end" : ""
@@ -158,20 +158,20 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           </p>
         </div>
 
-        {/* External source warning */}
+        {/* Warnung für externe Quellen */}
         {message.isExternal && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20">
             <AlertTriangle className="w-4 h-4 text-warning" />
             <span className="text-xs text-warning">
-              This response includes external sources
+              Diese Antwort enthält externe Quellen
             </span>
           </div>
         )}
 
-        {/* Sources */}
+        {/* Quellen */}
         {message.sources && message.sources.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Sources:</p>
+            <p className="text-xs font-medium text-muted-foreground">Quellen:</p>
             <div className="flex flex-wrap gap-2">
               {message.sources.map((source) => (
                 <SourceCard key={source.id} source={source} />
@@ -180,9 +180,9 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
 
-        {/* Timestamp */}
+        {/* Zeitstempel */}
         <p className="text-xs text-muted-foreground">
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {message.timestamp.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </div>
@@ -196,7 +196,7 @@ function SourceCard({ source }: { source: DocumentSource }) {
       <div className="min-w-0">
         <p className="text-xs font-medium text-foreground truncate">{source.title}</p>
         {source.page && (
-          <p className="text-xs text-muted-foreground">Page {source.page}</p>
+          <p className="text-xs text-muted-foreground">Seite {source.page}</p>
         )}
       </div>
       <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />

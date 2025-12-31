@@ -30,16 +30,16 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       setFile(uploadedFile);
       setTitle(uploadedFile.name.replace(/\.[^/.]+$/, ''));
       
-      // Simulate AI tag analysis (will be replaced with real AI later)
+      // KI-Tag-Analyse simulieren (wird später durch echte KI ersetzt)
       setIsAnalyzing(true);
       setTimeout(() => {
-        // Suggest relevant tags based on file name
+        // Relevante Tags basierend auf Dateiname vorschlagen
         const suggestions: string[] = [];
         const fileName = uploadedFile.name.toLowerCase();
-        if (fileName.includes('safety') || fileName.includes('sicherheit')) suggestions.push('Safety');
-        if (fileName.includes('regulation') || fileName.includes('vorschrift')) suggestions.push('Regulations');
+        if (fileName.includes('safety') || fileName.includes('sicherheit')) suggestions.push('Sicherheit');
+        if (fileName.includes('regulation') || fileName.includes('vorschrift')) suggestions.push('Vorschriften');
         if (fileName.includes('best') || fileName.includes('practice')) suggestions.push('Best Practice');
-        if (suggestions.length === 0) suggestions.push('Technical');
+        if (suggestions.length === 0) suggestions.push('Technisch');
         setAiSuggestions(suggestions);
         setIsAnalyzing(false);
       }, 1000);
@@ -92,7 +92,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Hintergrund */}
       <div 
         className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
         onClick={handleClose}
@@ -100,15 +100,15 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       
       {/* Modal */}
       <div className="relative w-full max-w-xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden animate-slide-in-up">
-        {/* Header */}
+        {/* Kopfzeile */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Upload className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Upload Document</h2>
-              <p className="text-sm text-muted-foreground">Share your knowledge with the team</p>
+              <h2 className="text-lg font-semibold text-foreground">Dokument hochladen</h2>
+              <p className="text-sm text-muted-foreground">Teilen Sie Ihr Wissen mit dem Team</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleClose}>
@@ -116,7 +116,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </Button>
         </div>
 
-        {/* Content */}
+        {/* Inhalt */}
         <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           {/* Dropzone */}
           <div
@@ -145,42 +145,42 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               <>
                 <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="font-medium text-foreground mb-1">
-                  {isDragActive ? 'Drop file here' : 'Drag & drop or click to upload'}
+                  {isDragActive ? 'Datei hier ablegen' : 'Ziehen & Ablegen oder klicken zum Hochladen'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  PDF, Excel, PowerPoint, or images up to 50MB
+                  PDF, Excel, PowerPoint oder Bilder bis zu 50MB
                 </p>
               </>
             )}
           </div>
 
-          {/* Title */}
+          {/* Titel */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Document Title</label>
+            <label className="text-sm font-medium text-foreground">Dokumenttitel</label>
             <Input 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter document title..."
+              placeholder="Dokumenttitel eingeben..."
             />
           </div>
 
-          {/* Description */}
+          {/* Beschreibung */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Description</label>
+            <label className="text-sm font-medium text-foreground">Beschreibung</label>
             <Textarea 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Briefly describe this document..."
+              placeholder="Beschreiben Sie dieses Dokument kurz..."
               rows={3}
             />
           </div>
 
-          {/* AI Tag Suggestions */}
+          {/* KI-Tag-Vorschläge */}
           {aiSuggestions.length > 0 && (
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">AI Suggested Tags</span>
+                <span className="text-sm font-medium text-primary">KI-Vorschläge für Tags</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {aiSuggestions.map((tag) => (
@@ -200,7 +200,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           {isAnalyzing && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span>Analyzing document for tag suggestions...</span>
+              <span>Dokument wird auf Tag-Vorschläge analysiert...</span>
             </div>
           )}
 
@@ -208,7 +208,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
               <Tag className="w-4 h-4" />
-              Select Tags
+              Tags auswählen
             </label>
             <div className="flex flex-wrap gap-2">
               {availableTags.map((tag) => (
@@ -225,22 +225,22 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             </div>
           </div>
 
-          {/* Review notice */}
+          {/* Prüfhinweis */}
           <div className="flex items-start gap-3 p-4 rounded-xl bg-warning/10 border border-warning/20">
             <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-warning">Review Required</p>
+              <p className="font-medium text-warning">Prüfung erforderlich</p>
               <p className="text-muted-foreground mt-1">
-                Your document will be reviewed by a Champion before it becomes visible to all team members.
+                Ihr Dokument wird von einem Champion geprüft, bevor es für alle Teammitglieder sichtbar wird.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Fußzeile */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-muted/30">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Abbrechen
           </Button>
           <Button 
             variant="hero" 
@@ -250,12 +250,12 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             {uploadMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Uploading...
+                Wird hochgeladen...
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Upload Document
+                Dokument hochladen
               </>
             )}
           </Button>
