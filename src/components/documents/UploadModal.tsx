@@ -1,37 +1,19 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { X, Upload, FileText, Tag, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Upload, FileText, Tag, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTags, useUploadDocument } from '@/hooks/useDocuments';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (data: UploadData) => void;
 }
 
-interface UploadData {
-  file: File;
-  title: string;
-  description: string;
-  tags: string[];
-}
-
-const suggestedTags = [
-  { name: 'Safety', color: '#ef4444' },
-  { name: 'Building Code', color: '#3b82f6' },
-  { name: 'Electrical', color: '#f59e0b' },
-  { name: 'Plumbing', color: '#06b6d4' },
-  { name: 'HVAC', color: '#8b5cf6' },
-  { name: 'Structural', color: '#10b981' },
-  { name: 'Quality Control', color: '#ec4899' },
-  { name: 'Best Practice', color: '#14b8a6' },
-];
-
-export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -39,18 +21,28 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
+  const { data: availableTags = [] } = useTags();
+  const uploadMutation = useUploadDocument();
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const uploadedFile = acceptedFiles[0];
     if (uploadedFile) {
       setFile(uploadedFile);
       setTitle(uploadedFile.name.replace(/\.[^/.]+$/, ''));
       
-      // Simulate AI tag analysis
+      // Simulate AI tag analysis (will be replaced with real AI later)
       setIsAnalyzing(true);
       setTimeout(() => {
-        setAiSuggestions(['Safety', 'Building Code', 'Quality Control']);
+        // Suggest relevant tags based on file name
+        const suggestions: string[] = [];
+        const fileName = uploadedFile.name.toLowerCase();
+        if (fileName.includes('safety') || fileName.includes('sicherheit')) suggestions.push('Safety');
+        if (fileName.includes('regulation') || fileName.includes('vorschrift')) suggestions.push('Regulations');
+        if (fileName.includes('best') || fileName.includes('practice')) suggestions.push('Best Practice');
+        if (suggestions.length === 0) suggestions.push('Technical');
+        setAiSuggestions(suggestions);
         setIsAnalyzing(false);
-      }, 1500);
+      }, 1000);
     }
   }, []);
 
@@ -75,9 +67,9 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (file && title) {
-      onUpload({
+      await uploadMutation.mutateAsync({
         file,
         title,
         description,
@@ -219,9 +211,9 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
               Select Tags
             </label>
             <div className="flex flex-wrap gap-2">
-              {suggestedTags.map((tag) => (
+              {availableTags.map((tag) => (
                 <Badge
-                  key={tag.name}
+                  key={tag.id}
                   variant={selectedTags.includes(tag.name) ? "default" : "outline"}
                   className="cursor-pointer transition-all"
                   style={selectedTags.includes(tag.name) ? { backgroundColor: tag.color } : {}}
@@ -253,10 +245,19 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
           <Button 
             variant="hero" 
             onClick={handleSubmit}
-            disabled={!file || !title}
+            disabled={!file || !title || uploadMutation.isPending}
           >
-            <Upload className="w-4 h-4" />
-            Upload Document
+            {uploadMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Upload Document
+              </>
+            )}
           </Button>
         </div>
       </div>
