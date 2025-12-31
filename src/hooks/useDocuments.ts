@@ -47,8 +47,7 @@ export function useDocuments(statusFilter?: string) {
             tag_id,
             tags (id, name, color)
           ),
-          groups (id, name, description, is_global),
-          uploader:profiles!documents_uploaded_by_fkey (id, name, email, avatar_url)
+          groups (id, name, description, is_global)
         `)
         .order('created_at', { ascending: false });
 
@@ -56,10 +55,29 @@ export function useDocuments(statusFilter?: string) {
         query = query.eq('status', statusFilter as 'pending' | 'approved' | 'best-practice' | 'rejected');
       }
 
-      const { data, error } = await query;
+      const { data: documents, error } = await query;
       
       if (error) throw error;
-      return data;
+
+      // Fetch uploader profiles separately
+      if (documents && documents.length > 0) {
+        const uploaderIds = [...new Set(documents.map(d => d.uploaded_by).filter(Boolean))];
+        
+        if (uploaderIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, name, email, avatar_url')
+            .in('id', uploaderIds);
+
+          // Map profiles to documents
+          return documents.map(doc => ({
+            ...doc,
+            uploader: profiles?.find(p => p.id === doc.uploaded_by) || null
+          }));
+        }
+      }
+
+      return documents?.map(doc => ({ ...doc, uploader: null })) || [];
     },
   });
 }
