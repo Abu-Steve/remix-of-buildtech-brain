@@ -103,7 +103,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </nav>
 
         {/* Offline indicator */}
-        <div className="absolute bottom-20 left-4 right-4">
+        <div className="absolute bottom-32 left-4 right-4">
           <div className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-xl text-sm",
             isOnline 
