@@ -14,9 +14,11 @@ import {
   Download,
   Wifi,
   WifiOff,
-  LogOut
+  LogOut,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAdmin } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
 
   const handleSignOut = async () => {
     await signOut();
@@ -100,6 +103,23 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+          
+          {/* Admin-Only: Benutzerverwaltung */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200",
+                location.pathname === '/admin'
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <Users className="w-5 h-5" />
+              Benutzerverwaltung
+            </Link>
+          )}
         </nav>
 
         {/* Online-Anzeige */}
