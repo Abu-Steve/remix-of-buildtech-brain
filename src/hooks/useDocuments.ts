@@ -334,3 +334,47 @@ export function useViewDocument() {
     },
   });
 }
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      // First get the document to delete the file from storage
+      const { data: doc, error: fetchError } = await supabase
+        .from('documents')
+        .select('file_path')
+        .eq('id', documentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete from storage
+      if (doc?.file_path) {
+        await supabase.storage.from('documents').remove([doc.file_path]);
+      }
+
+      // Delete document tags first (foreign key constraint)
+      await supabase
+        .from('document_tags')
+        .delete()
+        .eq('document_id', documentId);
+
+      // Delete the document record
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      toast.success('Dokument erfolgreich gelöscht');
+    },
+    onError: (error) => {
+      toast.error(`Löschen fehlgeschlagen: ${error.message}`);
+    },
+  });
+}
