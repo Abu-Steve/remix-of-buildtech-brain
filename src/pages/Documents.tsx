@@ -11,13 +11,12 @@ import { useDocuments, useTags, useDownloadDocument, useViewDocument } from '@/h
 import type { Document, Tag } from '@/types';
 
 type ViewMode = 'grid' | 'list';
-type FilterStatus = 'all' | 'pending' | 'approved' | 'best-practice';
+type FilterStatus = 'all' | 'pending' | 'approved';
 
 const statusLabels: Record<FilterStatus, string> = {
   all: 'Alle',
   pending: 'Ausstehend',
   approved: 'Genehmigt',
-  'best-practice': 'Best Practice',
 };
 
 export default function Documents() {
@@ -170,7 +169,7 @@ export default function Documents() {
         {/* Status-Filter */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Status:</span>
-          {(['all', 'pending', 'approved', 'best-practice'] as FilterStatus[]).map((status) => (
+          {(['all', 'pending', 'approved'] as FilterStatus[]).map((status) => (
             <Button
               key={status}
               variant={filterStatus === status ? 'default' : 'outline'}
