@@ -7,7 +7,7 @@ import {
   FileIcon,
   Download,
   Star,
-  MoreVertical,
+  Trash2,
   Check,
   Clock,
   Award,
@@ -15,6 +15,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import type { Document, DocumentType, DocumentStatus } from '@/types';
 
@@ -22,6 +33,8 @@ interface DocumentCardProps {
   document: Document;
   onView?: () => void;
   onDownload?: () => void;
+  onDelete?: () => void;
+  isAdmin?: boolean;
 }
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
@@ -41,7 +54,7 @@ const statusConfig: Record<DocumentStatus, { icon: React.ElementType; label: str
   rejected: { icon: Clock, label: 'Rejected', className: 'bg-destructive/15 text-destructive border border-destructive/30' },
 };
 
-export function DocumentCard({ document, onView, onDownload }: DocumentCardProps) {
+export function DocumentCard({ document, onView, onDownload, onDelete, isAdmin }: DocumentCardProps) {
   const TypeIcon = typeIcons[document.type];
   const statusInfo = statusConfig[document.status];
   const StatusIcon = statusInfo.icon;
@@ -128,6 +141,42 @@ export function DocumentCard({ document, onView, onDownload }: DocumentCardProps
         >
           <Download className="w-4 h-4" />
         </Button>
+        
+        {isAdmin && onDelete && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="destructive"
+                className="h-8 w-8 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Dokument löschen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Das Dokument "{document.title}" wird unwiderruflich gelöscht. 
+                  Diese Aktion kann nicht rückgängig gemacht werden.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Löschen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       {/* Rating */}

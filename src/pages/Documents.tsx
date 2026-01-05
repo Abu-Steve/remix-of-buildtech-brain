@@ -7,7 +7,8 @@ import { UploadModal } from '@/components/documents/UploadModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useDocuments, useTags, useDownloadDocument, useViewDocument } from '@/hooks/useDocuments';
+import { useDocuments, useTags, useDownloadDocument, useViewDocument, useDeleteDocument } from '@/hooks/useDocuments';
+import { useIsAdmin } from '@/hooks/useUserRole';
 import type { Document, Tag } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -36,6 +37,8 @@ export default function Documents() {
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
   const downloadMutation = useDownloadDocument();
   const viewMutation = useViewDocument();
+  const deleteMutation = useDeleteDocument();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     return () => {
@@ -224,6 +227,8 @@ export default function Documents() {
                 document={doc} 
                 onView={() => openPreview(doc)}
                 onDownload={() => downloadMutation.mutate(doc.filePath)}
+                onDelete={() => deleteMutation.mutate(doc.id)}
+                isAdmin={isAdmin}
               />
             </div>
           ))}
