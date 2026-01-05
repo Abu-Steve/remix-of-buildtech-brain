@@ -215,19 +215,19 @@ export function PendingApprovals() {
               </Select>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex items-center gap-2 pt-2">
               <Button
                 variant="success"
-                className="sm:flex-1"
+                size="sm"
                 onClick={() => handleDecision('approved')}
                 disabled={!isChampion || approveMutation.isPending}
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 mr-1" />
                 Genehmigen
               </Button>
               <Button
                 variant="secondary"
-                className="sm:flex-1"
+                size="sm"
                 onClick={() => handleDecision('best-practice')}
                 disabled={!isChampion || approveMutation.isPending}
               >
@@ -235,11 +235,12 @@ export function PendingApprovals() {
               </Button>
               <Button
                 variant="outline"
-                className="sm:flex-1 text-destructive hover:text-destructive"
+                size="sm"
+                className="text-destructive hover:text-destructive"
                 onClick={() => handleDecision('rejected')}
                 disabled={!isChampion || approveMutation.isPending}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 mr-1" />
                 Ablehnen
               </Button>
             </div>
