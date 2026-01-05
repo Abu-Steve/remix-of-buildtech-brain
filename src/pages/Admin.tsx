@@ -1,9 +1,10 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useUserRole';
 import { useEffect } from 'react';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -30,6 +31,12 @@ export default function Admin() {
         <ShieldAlert className="w-16 h-16 text-destructive" />
         <h1 className="text-2xl font-bold">Zugriff verweigert</h1>
         <p className="text-muted-foreground">Nur Administratoren können auf diese Seite zugreifen.</p>
+        <Button asChild className="mt-4">
+          <Link to="/">
+            <Home className="w-4 h-4 mr-2" />
+            Zurück zum Dashboard
+          </Link>
+        </Button>
       </div>
     );
   }
