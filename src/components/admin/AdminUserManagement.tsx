@@ -20,8 +20,7 @@ export function AdminUserManagement() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState('');
-  const [role, setRole] = useState<'employee' | 'champion' | 'administrator'>('employee');
-  const [department, setDepartment] = useState<'office' | 'manager' | 'craftsman'>('office');
+  const [role, setRole] = useState<'employee' | 'champion'>('employee');
   
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -70,7 +69,7 @@ export function AdminUserManagement() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (userData: { email: string; password: string; name: string; groupId: string; role: string; department: string }) => {
+    mutationFn: async (userData: { email: string; password: string; name: string; groupId: string; role: string }) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       const response = await supabase.functions.invoke('create-user', {
@@ -93,7 +92,6 @@ export function AdminUserManagement() {
       setName('');
       setGroupId('');
       setRole('employee');
-      setDepartment('office');
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -152,7 +150,7 @@ export function AdminUserManagement() {
       return;
     }
 
-    createUserMutation.mutate({ email, password, name, groupId, role, department });
+    createUserMutation.mutate({ email, password, name, groupId, role });
   };
 
   return (
@@ -223,29 +221,14 @@ export function AdminUserManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department">Bereich</Label>
-                <Select value={department} onValueChange={(v) => setDepartment(v as 'office' | 'manager' | 'craftsman')} disabled={createUserMutation.isPending}>
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as 'employee' | 'champion')} disabled={createUserMutation.isPending}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="office">Büro</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="craftsman">Handwerker</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Rolle</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as 'employee' | 'champion' | 'administrator')} disabled={createUserMutation.isPending}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="employee">Mitarbeiter</SelectItem>
-                    <SelectItem value="champion">Champion (kann Dokumente freigeben)</SelectItem>
-                    <SelectItem value="administrator">Administrator (Vollzugriff)</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="champion">Champion (can approve documents)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

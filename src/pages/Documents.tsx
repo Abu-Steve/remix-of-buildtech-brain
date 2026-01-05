@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Grid3X3, List, Loader2, Link2 } from 'lucide-react';
+import { Plus, Search, Grid3X3, List, Loader2 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentPreviewModal } from '@/components/documents/DocumentPreviewModal';
 import { UploadModal } from '@/components/documents/UploadModal';
-import { ApprovalDialog } from '@/components/documents/ApprovalDialog';
-import { DocumentRelationsModal } from '@/components/documents/DocumentRelationsModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useDocuments, useTags, useDownloadDocument, useViewDocument, useDeleteDocument } from '@/hooks/useDocuments';
-import { useIsAdmin, useIsChampion } from '@/hooks/useUserRole';
+import { useIsAdmin } from '@/hooks/useUserRole';
 import type { Document, Tag } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -35,21 +33,12 @@ export default function Documents() {
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [previewContentType, setPreviewContentType] = useState<string | null>(null);
 
-  // Approval dialog state
-  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-  const [approvalDoc, setApprovalDoc] = useState<{ id: string; title: string; audience?: string[] } | null>(null);
-
-  // Relations modal state
-  const [relationsModalOpen, setRelationsModalOpen] = useState(false);
-  const [relationsDoc, setRelationsDoc] = useState<{ id: string; title: string } | null>(null);
-
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
   const downloadMutation = useDownloadDocument();
   const viewMutation = useViewDocument();
   const deleteMutation = useDeleteDocument();
   const isAdmin = useIsAdmin();
-  const isChampion = useIsChampion();
 
   useEffect(() => {
     return () => {
@@ -100,8 +89,6 @@ export default function Documents() {
     downloads: doc.downloads || 0,
     isCached: doc.is_cached,
     filePath: doc.file_path,
-    audience: doc.audience || ['all'],
-    visibilityScope: doc.visibility_scope || 'company_only',
   }));
 
   // Tags mit Anzahl transformieren
@@ -241,16 +228,7 @@ export default function Documents() {
                 onView={() => openPreview(doc)}
                 onDownload={() => downloadMutation.mutate(doc.filePath)}
                 onDelete={() => deleteMutation.mutate(doc.id)}
-                onApprove={() => {
-                  setApprovalDoc({ id: doc.id, title: doc.title, audience: doc.audience });
-                  setApprovalDialogOpen(true);
-                }}
-                onRelations={() => {
-                  setRelationsDoc({ id: doc.id, title: doc.title });
-                  setRelationsModalOpen(true);
-                }}
                 isAdmin={isAdmin}
-                isChampion={isChampion}
               />
             </div>
           ))}
@@ -281,32 +259,6 @@ export default function Documents() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
-
-      {/* Approval Dialog */}
-      {approvalDoc && (
-        <ApprovalDialog
-          isOpen={approvalDialogOpen}
-          onClose={() => {
-            setApprovalDialogOpen(false);
-            setApprovalDoc(null);
-          }}
-          documentId={approvalDoc.id}
-          documentTitle={approvalDoc.title}
-        />
-      )}
-
-      {/* Relations Modal */}
-      {relationsDoc && (
-        <DocumentRelationsModal
-          isOpen={relationsModalOpen}
-          onClose={() => {
-            setRelationsModalOpen(false);
-            setRelationsDoc(null);
-          }}
-          documentId={relationsDoc.id}
-          documentTitle={relationsDoc.title}
-        />
-      )}
     </AppLayout>
   );
 }
