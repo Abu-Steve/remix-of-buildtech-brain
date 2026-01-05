@@ -21,6 +21,7 @@ export function AdminUserManagement() {
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState('');
   const [role, setRole] = useState<'employee' | 'champion' | 'administrator'>('employee');
+  const [department, setDepartment] = useState<'office' | 'manager' | 'craftsman'>('office');
   
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -69,7 +70,7 @@ export function AdminUserManagement() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (userData: { email: string; password: string; name: string; groupId: string; role: string }) => {
+    mutationFn: async (userData: { email: string; password: string; name: string; groupId: string; role: string; department: string }) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       const response = await supabase.functions.invoke('create-user', {
@@ -91,6 +92,7 @@ export function AdminUserManagement() {
       setPassword('');
       setName('');
       setGroupId('');
+      setDepartment('office');
       setRole('employee');
     },
     onError: (error: Error) => {
@@ -150,7 +152,7 @@ export function AdminUserManagement() {
       return;
     }
 
-    createUserMutation.mutate({ email, password, name, groupId, role });
+    createUserMutation.mutate({ email, password, name, groupId, role, department });
   };
 
   return (
@@ -230,6 +232,20 @@ export function AdminUserManagement() {
                     <SelectItem value="employee">Mitarbeiter</SelectItem>
                     <SelectItem value="champion">Champion (kann Dokumente freigeben)</SelectItem>
                     <SelectItem value="administrator">Administrator (Vollzugriff)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Bereich</Label>
+                <Select value={department} onValueChange={(v) => setDepartment(v as 'office' | 'manager' | 'craftsman')} disabled={createUserMutation.isPending}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="office">Büro</SelectItem>
+                    <SelectItem value="manager">Bauleiter</SelectItem>
+                    <SelectItem value="craftsman">Handwerker</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

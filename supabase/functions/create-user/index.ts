@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, name, groupId, role } = await req.json();
+    const { email, password, name, groupId, role, department } = await req.json();
 
-    if (!email || !password || !name || !groupId) {
+    if (!email || !password || !name || !groupId || !department) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { name },
+      user_metadata: { name, department },
     });
 
     if (createError) {
