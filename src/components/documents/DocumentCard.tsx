@@ -48,7 +48,7 @@ export function DocumentCard({ document, onView, onDownload }: DocumentCardProps
 
   return (
     <div 
-      className="group relative bg-card rounded-2xl border border-border p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer min-h-[220px] pb-16"
+      className="group relative bg-card rounded-2xl border border-border p-5 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer"
       onClick={onView}
     >
       {/* Cached indicator */}
@@ -59,75 +59,76 @@ export function DocumentCard({ document, onView, onDownload }: DocumentCardProps
       )}
 
       {/* Document type icon */}
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-        <TypeIcon className="w-5 h-5 text-primary" />
+      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+        <TypeIcon className="w-6 h-6 text-primary" />
       </div>
 
       {/* Title and description */}
-      <h3 className="font-semibold text-foreground text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+      <h3 className="font-semibold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">
         {document.title}
       </h3>
-      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
         {document.description}
       </p>
 
       {/* Tags */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {document.tags.slice(0, 2).map((tag) => (
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {document.tags.slice(0, 3).map((tag) => (
           <Badge 
             key={tag.id} 
             variant="secondary"
-            className="text-xs px-1.5 py-0"
+            className="text-xs px-2 py-0.5"
             style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
           >
             {tag.name}
           </Badge>
         ))}
-        {document.tags.length > 2 && (
-          <Badge variant="secondary" className="text-xs px-1.5 py-0">
-            +{document.tags.length - 2}
+        {document.tags.length > 3 && (
+          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+            +{document.tags.length - 3}
           </Badge>
         )}
       </div>
 
       {/* Status and metadata */}
-      <div className="flex items-center justify-between pt-2 border-t border-border">
-        <Badge className={cn("text-xs px-1.5 py-0", statusInfo.className)}>
+      <div className="flex items-center justify-between pt-3 border-t border-border">
+        <Badge className={cn("text-xs", statusInfo.className)}>
           <StatusIcon className="w-3 h-3 mr-1" />
           {statusInfo.label}
         </Badge>
         
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        {/* Version/Size - hidden on hover, buttons shown instead */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:opacity-0 transition-opacity">
           <span>v{document.version}</span>
           <span>•</span>
           <span>{document.size}</span>
         </div>
-      </div>
 
-      {/* Hover actions - positioned below status */}
-      <div className="absolute inset-x-4 bottom-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button 
-          size="sm" 
-          variant="hero"
-          className="flex-1 h-8 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            onView?.();
-          }}
-        >
-          Dokument öffnen
-        </Button>
-        <Button 
-          size="icon" 
-          variant="secondary"
-          className="shrink-0 h-8 w-8"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDownload?.();
-          }}
-        >
-          <Download className="w-4 h-4" />
-        </Button>
+        {/* Hover actions - replaces version/size area */}
+        <div className="absolute right-5 bottom-5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button 
+            size="sm" 
+            variant="hero"
+            className="h-7 text-xs px-3"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView?.();
+            }}
+          >
+            Dokument öffnen
+          </Button>
+          <Button 
+            size="icon" 
+            variant="secondary"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload?.();
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
       {/* Rating */}
