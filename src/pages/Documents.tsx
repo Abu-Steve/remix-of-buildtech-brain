@@ -292,7 +292,6 @@ export default function Documents() {
           }}
           documentId={approvalDoc.id}
           documentTitle={approvalDoc.title}
-          currentAudience={approvalDoc.audience}
         />
       )}
 
