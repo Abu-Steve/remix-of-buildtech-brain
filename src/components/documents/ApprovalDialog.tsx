@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, CheckCircle, XCircle, Award, Globe, Building2, Users, Loader2 } from 'lucide-react';
+import { X, CheckCircle, XCircle, Award, Globe, Building2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,7 +10,6 @@ interface ApprovalDialogProps {
   onClose: () => void;
   documentId: string;
   documentTitle: string;
-  currentAudience?: string[];
 }
 
 export function ApprovalDialog({ 
@@ -18,25 +17,12 @@ export function ApprovalDialog({
   onClose, 
   documentId, 
   documentTitle,
-  currentAudience = ['all']
 }: ApprovalDialogProps) {
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [visibilityScope, setVisibilityScope] = useState<'company_only' | 'all_companies'>('company_only');
-  const [audience, setAudience] = useState<string[]>(currentAudience);
   
   const { data: groups = [] } = useGroups();
   const approveMutation = useApproveDocument();
-
-  const toggleAudience = (value: string) => {
-    if (value === 'all') {
-      setAudience(['all']);
-    } else {
-      const newAudience = audience.includes(value)
-        ? audience.filter(a => a !== value)
-        : [...audience.filter(a => a !== 'all'), value];
-      setAudience(newAudience.length === 0 ? ['all'] : newAudience);
-    }
-  };
 
   const handleApprove = (status: 'approved' | 'best-practice') => {
     approveMutation.mutate({
@@ -44,7 +30,7 @@ export function ApprovalDialog({
       groupId: selectedGroup || null,
       status,
       visibilityScope,
-      audience,
+      audience: ['all'],
     }, {
       onSuccess: () => onClose(),
     });
@@ -109,32 +95,7 @@ export function ApprovalDialog({
                 <Globe className="w-4 h-4 mr-2" />
                 Alle Firmen
               </Badge>
-            </div>
           </div>
-
-          {/* Audience */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Zielgruppe
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'all', label: 'Alle' },
-                { value: 'office', label: 'Büro' },
-                { value: 'manager', label: 'Manager' },
-                { value: 'craftsman', label: 'Handwerker' },
-              ].map((option) => (
-                <Badge
-                  key={option.value}
-                  variant={audience.includes(option.value) ? 'default' : 'outline'}
-                  className="cursor-pointer transition-all"
-                  onClick={() => toggleAudience(option.value)}
-                >
-                  {option.label}
-                </Badge>
-              ))}
-            </div>
           </div>
 
           {/* Group selection */}
