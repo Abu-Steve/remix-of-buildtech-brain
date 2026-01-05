@@ -7,21 +7,48 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Users, Shield, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, Trash2, Pencil } from 'lucide-react';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
+type UserDepartment = 'office' | 'manager' | 'craftsman';
+type UserRole = 'employee' | 'champion' | 'administrator';
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  department_enum: UserDepartment | null;
+  user_roles: { user_id: string; role: string }[];
+  user_groups: { group_id: string; groups: { name: string } | null }[];
+}
+
+const departmentLabels: Record<UserDepartment, string> = {
+  office: 'Büro',
+  manager: 'Manager',
+  craftsman: 'Handwerker',
+};
+
 export function AdminUserManagement() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState('');
-  const [role, setRole] = useState<'employee' | 'champion' | 'administrator'>('employee');
-  const [department, setDepartment] = useState<'office' | 'manager' | 'craftsman'>('office');
+  const [role, setRole] = useState<UserRole>('employee');
+  const [department, setDepartment] = useState<UserDepartment>('office');
+  
+  // Edit modal state
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editDepartment, setEditDepartment] = useState<UserDepartment>('office');
+  const [editRole, setEditRole] = useState<UserRole>('employee');
+  const [editGroupId, setEditGroupId] = useState('');
   
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -100,6 +127,58 @@ export function AdminUserManagement() {
     },
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: { userId: string; name: string; email: string; department: UserDepartment; role: UserRole; groupId: string }) => {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          name: userData.name, 
+          email: userData.email, 
+          department_enum: userData.department 
+        })
+        .eq('id', userData.userId);
+      
+      if (profileError) throw profileError;
+
+      // Update role - first delete existing, then insert new
+      const { error: deleteRoleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userData.userId);
+      
+      if (deleteRoleError) throw deleteRoleError;
+
+      const { error: insertRoleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userData.userId, role: userData.role });
+      
+      if (insertRoleError) throw insertRoleError;
+
+      // Update group - first delete existing, then insert new
+      const { error: deleteGroupError } = await supabase
+        .from('user_groups')
+        .delete()
+        .eq('user_id', userData.userId);
+      
+      if (deleteGroupError) throw deleteGroupError;
+
+      const { error: insertGroupError } = await supabase
+        .from('user_groups')
+        .insert({ user_id: userData.userId, group_id: userData.groupId });
+      
+      if (insertGroupError) throw insertGroupError;
+    },
+    onSuccess: () => {
+      toast.success('Benutzer erfolgreich aktualisiert');
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      setEditingUser(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -124,6 +203,45 @@ export function AdminUserManagement() {
       toast.error(error.message);
     },
   });
+
+  const openEditModal = (user: UserData) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditDepartment(user.department_enum || 'office');
+    setEditRole((user.user_roles?.[0]?.role as UserRole) || 'employee');
+    setEditGroupId(user.user_groups?.[0]?.group_id || '');
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    if (!editName.trim()) {
+      toast.error('Bitte geben Sie einen Namen ein');
+      return;
+    }
+
+    try {
+      emailSchema.parse(editEmail);
+    } catch {
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+      return;
+    }
+
+    if (!editGroupId) {
+      toast.error('Bitte wählen Sie ein Unternehmen aus');
+      return;
+    }
+
+    updateUserMutation.mutate({
+      userId: editingUser.id,
+      name: editName,
+      email: editEmail,
+      department: editDepartment,
+      role: editRole,
+      groupId: editGroupId,
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,7 +342,7 @@ export function AdminUserManagement() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as 'employee' | 'champion' | 'administrator')} disabled={createUserMutation.isPending}>
+                <Select value={role} onValueChange={(v) => setRole(v as UserRole)} disabled={createUserMutation.isPending}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -238,13 +356,13 @@ export function AdminUserManagement() {
 
               <div className="space-y-2">
                 <Label htmlFor="department">Bereich</Label>
-                <Select value={department} onValueChange={(v) => setDepartment(v as 'office' | 'manager' | 'craftsman')} disabled={createUserMutation.isPending}>
+                <Select value={department} onValueChange={(v) => setDepartment(v as UserDepartment)} disabled={createUserMutation.isPending}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="office">Büro</SelectItem>
-                    <SelectItem value="manager">Bauleiter</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="craftsman">Handwerker</SelectItem>
                   </SelectContent>
                 </Select>
@@ -295,6 +413,12 @@ export function AdminUserManagement() {
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* Department badge */}
+                    {user.department_enum && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-accent-foreground">
+                        {departmentLabels[user.department_enum as UserDepartment]}
+                      </span>
+                    )}
                     <div className="flex flex-wrap gap-1">
                       {user.user_groups?.map((ug: { group_id: string; groups: { name: string } | null }) => (
                         <span
@@ -322,6 +446,17 @@ export function AdminUserManagement() {
                         </span>
                       ))}
                     </div>
+                    
+                    {/* Edit button */}
+                    {user.id !== currentUser?.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditModal(user as UserData)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
                     
                     {/* Delete button - only show if not current user */}
                     {user.id !== currentUser?.id && (
@@ -367,6 +502,95 @@ export function AdminUserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Benutzer bearbeiten</DialogTitle>
+            <DialogDescription>
+              Ändern Sie die Daten des Benutzers
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={updateUserMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-Mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                disabled={updateUserMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">Bereich</Label>
+              <Select value={editDepartment} onValueChange={(v) => setEditDepartment(v as UserDepartment)} disabled={updateUserMutation.isPending}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="office">Büro</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="craftsman">Handwerker</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-role">Rolle</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)} disabled={updateUserMutation.isPending}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Mitarbeiter</SelectItem>
+                  <SelectItem value="champion">Champion</SelectItem>
+                  <SelectItem value="administrator">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-company">Unternehmen</Label>
+              <Select value={editGroupId} onValueChange={setEditGroupId} disabled={groupsLoading || updateUserMutation.isPending}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unternehmen wählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups?.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)} disabled={updateUserMutation.isPending}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleUpdateUser} disabled={updateUserMutation.isPending}>
+              {updateUserMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Speichern...
+                </>
+              ) : (
+                'Speichern'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
