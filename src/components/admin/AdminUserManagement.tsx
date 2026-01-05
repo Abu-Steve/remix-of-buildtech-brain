@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Users, Shield } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, Trash2 } from 'lucide-react';
 import { z } from 'zod';
+import { useAuth } from '@/hooks/useAuth';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -21,6 +23,7 @@ export function AdminUserManagement() {
   const [role, setRole] = useState<'employee' | 'champion'>('employee');
   
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['groups'],
@@ -89,6 +92,31 @@ export function AdminUserManagement() {
       setName('');
       setGroupId('');
       setRole('employee');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Benutzer erfolgreich gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -277,6 +305,44 @@ export function AdminUserManagement() {
                         </span>
                       ))}
                     </div>
+                    
+                    {/* Delete button - only show if not current user */}
+                    {user.id !== currentUser?.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={deleteUserMutation.isPending}
+                          >
+                            {deleteUserMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Benutzer löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Möchten Sie den Benutzer <strong>{user.name}</strong> ({user.email}) wirklich löschen? 
+                              Diese Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteUserMutation.mutate(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Löschen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               ))}
