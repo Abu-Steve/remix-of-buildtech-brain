@@ -413,12 +413,7 @@ export function AdminUserManagement() {
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* Department badge */}
-                    {user.department_enum && (
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-accent text-accent-foreground">
-                        {departmentLabels[user.department_enum as UserDepartment]}
-                      </span>
-                    )}
+                    {/* Company badge */}
                     <div className="flex flex-wrap gap-1">
                       {user.user_groups?.map((ug: { group_id: string; groups: { name: string } | null }) => (
                         <span
@@ -429,6 +424,12 @@ export function AdminUserManagement() {
                         </span>
                       ))}
                     </div>
+                    {/* Department badge */}
+                    {user.department_enum && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                        {departmentLabels[user.department_enum as UserDepartment]}
+                      </span>
+                    )}
                     <div className="flex gap-1">
                       {user.user_roles?.map((ur: { role: string }) => (
                         <span
