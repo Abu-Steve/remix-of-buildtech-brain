@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Grid3X3, List, Loader2 } from 'lucide-react';
+import { Plus, Search, Grid3X3, List, Loader2, Folder, FolderOpen, ChevronRight } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentPreviewModal } from '@/components/documents/DocumentPreviewModal';
@@ -7,11 +7,12 @@ import { UploadModal } from '@/components/documents/UploadModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useDocuments, useTags, useDownloadDocument, useViewDocument, useDeleteDocument } from '@/hooks/useDocuments';
+import { useDocuments, useTags, useDownloadDocument, useViewDocument, useDeleteDocument, useGroups } from '@/hooks/useDocuments';
+import { useDocumentRelations } from '@/hooks/useDocumentRelations';
 import { useIsAdmin } from '@/hooks/useUserRole';
 import type { Document, Tag } from '@/types';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'folders';
 type FilterStatus = 'all' | 'pending' | 'approved';
 
 const statusLabels: Record<FilterStatus, string> = {
@@ -20,21 +21,41 @@ const statusLabels: Record<FilterStatus, string> = {
   approved: 'Genehmigt',
 };
 
+const departmentLabels: Record<string, string> = {
+  office: 'Büro',
+  manager: 'Manager',
+  craftsman: 'Handwerker',
+};
+
+interface FolderStructure {
+  [groupName: string]: {
+    groupId: string;
+    departments: {
+      [dept: string]: (Document & { filePath: string })[];
+    };
+  };
+}
+
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('folders');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  
+  // Folder navigation
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
 
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewTitle, setPreviewTitle] = useState('');
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<(Document & { filePath: string }) | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [previewContentType, setPreviewContentType] = useState<string | null>(null);
 
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
+  const { data: groupsData = [] } = useGroups();
+  const { data: documentRelations = [] } = useDocumentRelations(previewDoc?.id || null);
   const downloadMutation = useDownloadDocument();
   const viewMutation = useViewDocument();
   const deleteMutation = useDeleteDocument();
@@ -46,9 +67,8 @@ export default function Documents() {
     };
   }, [previewObjectUrl]);
 
-  const openPreview = (doc: { title: string; filePath: string }) => {
-    setPreviewTitle(doc.title);
-    setPreviewFilePath(doc.filePath);
+  const openPreview = (doc: Document & { filePath: string }) => {
+    setPreviewDoc(doc);
     setPreviewContentType(null);
     setPreviewObjectUrl(null);
     setPreviewOpen(true);
@@ -66,8 +86,7 @@ export default function Documents() {
 
   // Map raw DB data to include file_path for download
   const rawDocuments = documentsData || [];
-  // Datenbank-Dokumente in UI-Format umwandeln
-  const documents: (Document & { filePath: string })[] = rawDocuments.map((doc: any) => ({
+  const documents: (Document & { filePath: string; groupName?: string; groupId?: string; audience?: string[]; visibilityScope?: string })[] = rawDocuments.map((doc: any) => ({
     id: doc.id,
     title: doc.title,
     description: doc.description || '',
@@ -89,6 +108,10 @@ export default function Documents() {
     downloads: doc.downloads || 0,
     isCached: doc.is_cached,
     filePath: doc.file_path,
+    groupName: doc.groups?.name,
+    groupId: doc.group_id,
+    audience: doc.audience,
+    visibilityScope: doc.visibility_scope,
   }));
 
   // Tags mit Anzahl transformieren
@@ -107,6 +130,47 @@ export default function Documents() {
     return matchesSearch && matchesTags;
   });
 
+  // Build folder structure
+  const folderStructure: FolderStructure = {};
+  filteredDocuments.forEach(doc => {
+    const groupName = doc.groupName || 'Ohne Zuordnung';
+    const groupId = doc.groupId || 'ungrouped';
+    
+    // Determine department from file path
+    let department = 'office';
+    const pathParts = doc.filePath.split('/');
+    if (pathParts.length >= 2) {
+      const possibleDept = pathParts[1];
+      if (['office', 'manager', 'craftsman'].includes(possibleDept)) {
+        department = possibleDept;
+      }
+    }
+
+    if (!folderStructure[groupName]) {
+      folderStructure[groupName] = { groupId, departments: {} };
+    }
+    if (!folderStructure[groupName].departments[department]) {
+      folderStructure[groupName].departments[department] = [];
+    }
+    folderStructure[groupName].departments[department].push(doc);
+  });
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupName) 
+        ? prev.filter(g => g !== groupName)
+        : [...prev, groupName]
+    );
+  };
+
+  const toggleDepartment = (key: string) => {
+    setExpandedDepartments(prev => 
+      prev.includes(key) 
+        ? prev.filter(d => d !== key)
+        : [...prev, key]
+    );
+  };
+
   const toggleTag = (tagId: string) => {
     setSelectedTags(prev => 
       prev.includes(tagId) 
@@ -116,6 +180,28 @@ export default function Documents() {
   };
 
   const isLoading = docsLoading || tagsLoading;
+
+  // Build metadata for preview
+  const previewMetadata = previewDoc ? {
+    id: previewDoc.id,
+    title: previewDoc.title,
+    description: previewDoc.description,
+    type: previewDoc.type,
+    status: previewDoc.status,
+    version: previewDoc.version,
+    size: previewDoc.size,
+    uploadedBy: previewDoc.uploadedBy,
+    uploadedAt: previewDoc.uploadedAt,
+    groupName: (previewDoc as any).groupName,
+    visibilityScope: (previewDoc as any).visibilityScope as 'company_only' | 'all_companies',
+    audience: (previewDoc as any).audience,
+    tags: previewDoc.tags,
+    relations: documentRelations.map(r => ({
+      type: r.type as any,
+      targetDocTitle: r.targetDocTitle,
+      targetDocId: r.targetDocId,
+    })),
+  } : undefined;
 
   return (
     <AppLayout>
@@ -153,9 +239,18 @@ export default function Documents() {
           
           <div className="flex items-center gap-2">
             <Button 
+              variant={viewMode === 'folders' ? 'secondary' : 'ghost'} 
+              size="icon"
+              onClick={() => setViewMode('folders')}
+              title="Ordneransicht"
+            >
+              <Folder className="w-5 h-5" />
+            </Button>
+            <Button 
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
               size="icon"
               onClick={() => setViewMode('grid')}
+              title="Rasteransicht"
             >
               <Grid3X3 className="w-5 h-5" />
             </Button>
@@ -163,6 +258,7 @@ export default function Documents() {
               variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
               size="icon"
               onClick={() => setViewMode('list')}
+              title="Listenansicht"
             >
               <List className="w-5 h-5" />
             </Button>
@@ -210,8 +306,91 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Dokumente Raster/Liste */}
-      {!isLoading && (
+      {/* Folder View */}
+      {!isLoading && viewMode === 'folders' && (
+        <div className="space-y-2">
+          {Object.entries(folderStructure).map(([groupName, groupData]) => (
+            <div key={groupName} className="border rounded-lg bg-card">
+              {/* Group Header */}
+              <button
+                onClick={() => toggleGroup(groupName)}
+                className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
+              >
+                <ChevronRight className={cn(
+                  "w-4 h-4 transition-transform",
+                  expandedGroups.includes(groupName) && "rotate-90"
+                )} />
+                {expandedGroups.includes(groupName) ? (
+                  <FolderOpen className="w-5 h-5 text-primary" />
+                ) : (
+                  <Folder className="w-5 h-5 text-primary" />
+                )}
+                <span className="font-medium">{groupName}</span>
+                <Badge variant="secondary" className="ml-auto">
+                  {Object.values(groupData.departments).flat().length} Dokumente
+                </Badge>
+              </button>
+
+              {/* Departments */}
+              {expandedGroups.includes(groupName) && (
+                <div className="pl-8 pb-2">
+                  {Object.entries(groupData.departments).map(([dept, docs]) => {
+                    const deptKey = `${groupName}-${dept}`;
+                    return (
+                      <div key={dept} className="border-l-2 border-muted ml-2">
+                        <button
+                          onClick={() => toggleDepartment(deptKey)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors"
+                        >
+                          <ChevronRight className={cn(
+                            "w-4 h-4 transition-transform",
+                            expandedDepartments.includes(deptKey) && "rotate-90"
+                          )} />
+                          {expandedDepartments.includes(deptKey) ? (
+                            <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Folder className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span className="text-sm">{departmentLabels[dept] || dept}</span>
+                          <Badge variant="outline" className="ml-auto text-xs">
+                            {docs.length}
+                          </Badge>
+                        </button>
+
+                        {/* Documents in department */}
+                        {expandedDepartments.includes(deptKey) && (
+                          <div className="pl-8 pb-2 space-y-2">
+                            {docs.map((doc) => (
+                              <div key={doc.id} className="animate-fade-in">
+                                <DocumentCard 
+                                  document={doc} 
+                                  onView={() => openPreview(doc)}
+                                  onDownload={() => downloadMutation.mutate(doc.filePath)}
+                                  onDelete={() => deleteMutation.mutate(doc.id)}
+                                  isAdmin={isAdmin}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {Object.keys(folderStructure).length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              Keine Dokumente gefunden
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Grid/List View */}
+      {!isLoading && viewMode !== 'folders' && (
         <div className={cn(
           viewMode === 'grid' 
             ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" 
@@ -243,15 +422,16 @@ export default function Documents() {
             if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
             setPreviewObjectUrl(null);
             setPreviewContentType(null);
-            setPreviewFilePath(null);
+            setPreviewDoc(null);
           }
         }}
-        title={previewTitle}
+        title={previewDoc?.title || ''}
         objectUrl={previewObjectUrl}
         contentType={previewContentType}
         onDownload={() => {
-          if (previewFilePath) downloadMutation.mutate(previewFilePath);
+          if (previewDoc?.filePath) downloadMutation.mutate(previewDoc.filePath);
         }}
+        metadata={previewMetadata}
       />
 
       {/* Upload-Modal */}

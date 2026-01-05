@@ -117,20 +117,41 @@ interface UploadDocumentParams {
   title: string;
   description: string;
   tags: string[];
+  audience: string[];
+  groupId: string | null;
+  department: string;
+  relations: { type: string; targetDocId: string }[];
 }
 
 export function useUploadDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ file, title, description, tags }: UploadDocumentParams) => {
+    mutationFn: async ({ file, title, description, tags, audience, groupId, department, relations }: UploadDocumentParams) => {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Build folder path: group_name/department/filename
+      // Get group name for folder structure
+      let folderPath = `${user.id}`;
+      if (groupId) {
+        const { data: groupData } = await supabase
+          .from('groups')
+          .select('name')
+          .eq('id', groupId)
+          .maybeSingle();
+        
+        if (groupData) {
+          const groupFolder = groupData.name.toLowerCase().replace(/\s+/g, '-');
+          const departmentFolder = department || 'office';
+          folderPath = `${groupFolder}/${departmentFolder}`;
+        }
+      }
+
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      const fileName = `${folderPath}/${Date.now()}-${file.name}`;
       
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -152,7 +173,7 @@ export function useUploadDocument() {
       };
       const docType = typeMap[fileExt?.toLowerCase() || ''] || 'other';
 
-      // Create document record
+      // Create document record with metadata
       const { data: document, error: docError } = await supabase
         .from('documents')
         .insert({
@@ -163,6 +184,9 @@ export function useUploadDocument() {
           file_path: fileName,
           file_size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
           uploaded_by: user.id,
+          group_id: groupId,
+          audience: audience,
+          visibility_scope: 'company_only', // Default, Champion can change during approval
         })
         .select()
         .single();
@@ -171,7 +195,6 @@ export function useUploadDocument() {
 
       // Link tags
       if (tags.length > 0) {
-        // Get or create tags
         for (const tagName of tags) {
           const { data: existingTag } = await supabase
             .from('tags')
@@ -195,6 +218,20 @@ export function useUploadDocument() {
               .from('document_tags')
               .insert({ document_id: document.id, tag_id: tagId });
           }
+        }
+      }
+
+      // Create relations
+      if (relations.length > 0) {
+        for (const relation of relations) {
+          await supabase
+            .from('document_relations')
+            .insert({
+              source_document_id: document.id,
+              target_document_id: relation.targetDocId,
+              relation_type: relation.type as any,
+              created_by: user.id,
+            });
         }
       }
 

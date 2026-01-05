@@ -1,17 +1,40 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { X, Upload, FileText, Tag, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Upload, FileText, Tag, Sparkles, AlertCircle, Loader2, Link2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { useTags, useUploadDocument } from '@/hooks/useDocuments';
+import { useTags, useUploadDocument, useDocuments } from '@/hooks/useDocuments';
+import { useUserGroup, useUserDepartment } from '@/hooks/useUserGroup';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type AudienceType = 'office' | 'manager' | 'craftsman';
+type RelationType = 'extends' | 'references' | 'supersedes' | 'depends_on' | 'implements' | 'explains' | 'related_to';
+
+const audienceLabels: Record<AudienceType, string> = {
+  office: 'Büro',
+  manager: 'Manager',
+  craftsman: 'Handwerker',
+};
+
+const relationLabels: Record<RelationType, string> = {
+  extends: 'erweitert',
+  references: 'verweist auf',
+  supersedes: 'ersetzt',
+  depends_on: 'setzt voraus',
+  implements: 'setzt um',
+  explains: 'erklärt',
+  related_to: 'thematisch verwandt',
+};
 
 export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -20,8 +43,21 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  
+  // New metadata fields
+  const [audienceAll, setAudienceAll] = useState(true);
+  const [selectedAudience, setSelectedAudience] = useState<AudienceType[]>([]);
+  
+  // Relations
+  const [showRelations, setShowRelations] = useState(false);
+  const [relationType, setRelationType] = useState<RelationType>('related_to');
+  const [relatedDocId, setRelatedDocId] = useState('');
+  const [relations, setRelations] = useState<{ type: RelationType; targetDocId: string }[]>([]);
 
   const { data: availableTags = [] } = useTags();
+  const { data: existingDocs = [] } = useDocuments('approved');
+  const { data: userGroup } = useUserGroup();
+  const { data: userDepartment } = useUserDepartment();
   const uploadMutation = useUploadDocument();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -30,10 +66,9 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
       setFile(uploadedFile);
       setTitle(uploadedFile.name.replace(/\.[^/.]+$/, ''));
       
-      // KI-Tag-Analyse simulieren (wird später durch echte KI ersetzt)
+      // KI-Tag-Analyse simulieren
       setIsAnalyzing(true);
       setTimeout(() => {
-        // Relevante Tags basierend auf Dateiname vorschlagen
         const suggestions: string[] = [];
         const fileName = uploadedFile.name.toLowerCase();
         if (fileName.includes('safety') || fileName.includes('sicherheit')) suggestions.push('Sicherheit');
@@ -67,13 +102,43 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     );
   };
 
+  const toggleAudience = (audience: AudienceType) => {
+    if (audienceAll) {
+      setAudienceAll(false);
+      setSelectedAudience([audience]);
+    } else {
+      setSelectedAudience(prev => 
+        prev.includes(audience) 
+          ? prev.filter(a => a !== audience)
+          : [...prev, audience]
+      );
+    }
+  };
+
+  const addRelation = () => {
+    if (relatedDocId && !relations.some(r => r.targetDocId === relatedDocId)) {
+      setRelations(prev => [...prev, { type: relationType, targetDocId: relatedDocId }]);
+      setRelatedDocId('');
+    }
+  };
+
+  const removeRelation = (docId: string) => {
+    setRelations(prev => prev.filter(r => r.targetDocId !== docId));
+  };
+
   const handleSubmit = async () => {
     if (file && title) {
+      const audience = audienceAll ? ['all'] : selectedAudience;
+      
       await uploadMutation.mutateAsync({
         file,
         title,
         description,
         tags: selectedTags,
+        audience,
+        groupId: userGroup?.id || null,
+        department: userDepartment || 'office',
+        relations,
       });
       handleClose();
     }
@@ -85,22 +150,31 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setDescription('');
     setSelectedTags([]);
     setAiSuggestions([]);
+    setAudienceAll(true);
+    setSelectedAudience([]);
+    setShowRelations(false);
+    setRelations([]);
+    setRelatedDocId('');
     onClose();
   };
+
+  // Reset audience when toggling "all"
+  useEffect(() => {
+    if (audienceAll) {
+      setSelectedAudience([]);
+    }
+  }, [audienceAll]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Hintergrund */}
       <div 
         className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
         onClick={handleClose}
       />
       
-      {/* Modal */}
       <div className="relative w-full max-w-xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden animate-slide-in-up">
-        {/* Kopfzeile */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -116,7 +190,6 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </Button>
         </div>
 
-        {/* Inhalt */}
         <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           {/* Dropzone */}
           <div
@@ -154,6 +227,14 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             )}
           </div>
 
+          {/* Firma Info */}
+          {userGroup && (
+            <div className="p-3 rounded-lg bg-secondary/50 text-sm">
+              <span className="text-muted-foreground">Firma: </span>
+              <span className="font-medium">{userGroup.name}</span>
+            </div>
+          )}
+
           {/* Titel */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Dokumenttitel</label>
@@ -173,6 +254,40 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
               placeholder="Beschreiben Sie dieses Dokument kurz..."
               rows={3}
             />
+          </div>
+
+          {/* Audience Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Zielgruppe
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="audience-all" 
+                  checked={audienceAll}
+                  onCheckedChange={(checked) => setAudienceAll(!!checked)}
+                />
+                <Label htmlFor="audience-all" className="text-sm cursor-pointer">Alle</Label>
+              </div>
+              {(Object.keys(audienceLabels) as AudienceType[]).map((audience) => (
+                <div key={audience} className="flex items-center gap-2">
+                  <Checkbox 
+                    id={`audience-${audience}`}
+                    checked={!audienceAll && selectedAudience.includes(audience)}
+                    onCheckedChange={() => toggleAudience(audience)}
+                    disabled={audienceAll}
+                  />
+                  <Label 
+                    htmlFor={`audience-${audience}`} 
+                    className={cn("text-sm cursor-pointer", audienceAll && "text-muted-foreground")}
+                  >
+                    {audienceLabels[audience]}
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* KI-Tag-Vorschläge */}
@@ -225,6 +340,80 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
             </div>
           </div>
 
+          {/* Relations (optional) */}
+          <div className="space-y-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              type="button"
+              onClick={() => setShowRelations(!showRelations)}
+              className="text-muted-foreground"
+            >
+              <Link2 className="w-4 h-4 mr-2" />
+              {showRelations ? 'Relationen ausblenden' : 'Relationen hinzufügen (optional)'}
+            </Button>
+
+            {showRelations && (
+              <div className="space-y-3 p-4 rounded-lg border border-border bg-muted/30">
+                <div className="flex gap-2">
+                  <Select value={relationType} onValueChange={(v) => setRelationType(v as RelationType)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(relationLabels) as RelationType[]).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {relationLabels[type]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={relatedDocId} onValueChange={setRelatedDocId}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Dokument auswählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingDocs.map((doc: any) => (
+                        <SelectItem key={doc.id} value={doc.id}>
+                          {doc.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button type="button" size="icon" variant="secondary" onClick={addRelation}>
+                    +
+                  </Button>
+                </div>
+
+                {relations.length > 0 && (
+                  <div className="space-y-2">
+                    {relations.map((rel) => {
+                      const doc = existingDocs.find((d: any) => d.id === rel.targetDocId);
+                      return (
+                        <div key={rel.targetDocId} className="flex items-center justify-between p-2 rounded bg-background">
+                          <span className="text-sm">
+                            <span className="text-muted-foreground">{relationLabels[rel.type]}</span>{' '}
+                            <span className="font-medium">{doc?.title || rel.targetDocId}</span>
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => removeRelation(rel.targetDocId)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Prüfhinweis */}
           <div className="flex items-start gap-3 p-4 rounded-xl bg-warning/10 border border-warning/20">
             <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
@@ -237,7 +426,6 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </div>
         </div>
 
-        {/* Fußzeile */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-border bg-muted/30">
           <Button variant="outline" onClick={handleClose}>
             Abbrechen
