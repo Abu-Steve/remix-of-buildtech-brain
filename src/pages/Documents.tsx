@@ -6,7 +6,8 @@ import { UploadModal } from '@/components/documents/UploadModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useDocuments, useTags } from '@/hooks/useDocuments';
+import { useDocuments, useTags, useDownloadDocument } from '@/hooks/useDocuments';
+import { supabase } from '@/integrations/supabase/client';
 import type { Document, Tag } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -28,9 +29,12 @@ export default function Documents() {
 
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
+  const downloadMutation = useDownloadDocument();
 
+  // Map raw DB data to include file_path for download
+  const rawDocuments = documentsData || [];
   // Datenbank-Dokumente in UI-Format umwandeln
-  const documents: Document[] = (documentsData || []).map((doc: any) => ({
+  const documents: (Document & { filePath: string })[] = rawDocuments.map((doc: any) => ({
     id: doc.id,
     title: doc.title,
     description: doc.description || '',
@@ -51,6 +55,7 @@ export default function Documents() {
     rating: doc.rating,
     downloads: doc.downloads || 0,
     isCached: doc.is_cached,
+    filePath: doc.file_path,
   }));
 
   // Tags mit Anzahl transformieren
@@ -185,7 +190,10 @@ export default function Documents() {
               className="animate-fade-in"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <DocumentCard document={doc} />
+              <DocumentCard 
+                document={doc} 
+                onDownload={() => downloadMutation.mutate(doc.filePath)}
+              />
             </div>
           ))}
         </div>
