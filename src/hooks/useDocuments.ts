@@ -278,7 +278,7 @@ export function useDownloadDocument() {
 export function useViewDocument() {
   return useMutation({
     mutationFn: async (filePath: string) => {
-      // Get signed URL for viewing (no download header)
+      // Signed URL for viewing (no download header)
       const { data, error } = await supabase.storage
         .from('documents')
         .createSignedUrl(filePath, 300);
@@ -286,17 +286,18 @@ export function useViewDocument() {
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('Could not generate view link');
 
-      // Use iframe approach or direct navigation to avoid popup blocker
-      // Create a temporary link and use location.assign
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Chromium/Extensions may block top-level navigation to supabase.co,
+      // but allow fetch/XHR. So we fetch the bytes and render from a blob URL.
+      const res = await fetch(data.signedUrl);
+      if (!res.ok) throw new Error(`Preview failed (${res.status})`);
 
-      return data.signedUrl;
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      return {
+        objectUrl,
+        contentType: blob.type || res.headers.get('content-type') || 'application/octet-stream',
+      };
     },
     onError: (error) => {
       toast.error(`Dokument konnte nicht geöffnet werden: ${error.message}`);

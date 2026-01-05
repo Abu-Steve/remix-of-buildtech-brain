@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Search, Grid3X3, List, Loader2 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DocumentCard } from '@/components/documents/DocumentCard';
+import { DocumentPreviewModal } from '@/components/documents/DocumentPreviewModal';
 import { UploadModal } from '@/components/documents/UploadModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useDocuments, useTags, useDownloadDocument, useViewDocument } from '@/hooks/useDocuments';
-import { supabase } from '@/integrations/supabase/client';
 import type { Document, Tag } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -27,10 +27,40 @@ export default function Documents() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState('');
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
+  const [previewContentType, setPreviewContentType] = useState<string | null>(null);
+
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
   const downloadMutation = useDownloadDocument();
   const viewMutation = useViewDocument();
+
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    };
+  }, [previewObjectUrl]);
+
+  const openPreview = (doc: { title: string; filePath: string }) => {
+    setPreviewTitle(doc.title);
+    setPreviewFilePath(doc.filePath);
+    setPreviewContentType(null);
+    setPreviewObjectUrl(null);
+    setPreviewOpen(true);
+
+    viewMutation.mutate(doc.filePath, {
+      onSuccess: ({ objectUrl, contentType }) => {
+        setPreviewObjectUrl(objectUrl);
+        setPreviewContentType(contentType);
+      },
+      onError: () => {
+        setPreviewOpen(false);
+      },
+    });
+  };
 
   // Map raw DB data to include file_path for download
   const rawDocuments = documentsData || [];
@@ -193,7 +223,7 @@ export default function Documents() {
             >
               <DocumentCard 
                 document={doc} 
-                onView={() => viewMutation.mutate(doc.filePath)}
+                onView={() => openPreview(doc)}
                 onDownload={() => downloadMutation.mutate(doc.filePath)}
               />
             </div>
@@ -201,35 +231,24 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Leerer Zustand */}
-      {!isLoading && filteredDocuments.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">Keine Dokumente gefunden</h3>
-          <p className="text-muted-foreground mb-6">
-            {documents.length === 0 
-              ? "Es wurden noch keine Dokumente hochgeladen. Seien Sie der Erste, der sein Wissen teilt!"
-              : "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen."
-            }
-          </p>
-          {documents.length === 0 ? (
-            <Button variant="hero" onClick={() => setIsUploadModalOpen(true)}>
-              <Plus className="w-4 h-4" />
-              Erstes Dokument hochladen
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => {
-              setSearchQuery('');
-              setFilterStatus('all');
-              setSelectedTags([]);
-            }}>
-              Alle Filter löschen
-            </Button>
-          )}
-        </div>
-      )}
+      <DocumentPreviewModal
+        open={previewOpen}
+        onOpenChange={(open) => {
+          setPreviewOpen(open);
+          if (!open) {
+            if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+            setPreviewObjectUrl(null);
+            setPreviewContentType(null);
+            setPreviewFilePath(null);
+          }
+        }}
+        title={previewTitle}
+        objectUrl={previewObjectUrl}
+        contentType={previewContentType}
+        onDownload={() => {
+          if (previewFilePath) downloadMutation.mutate(previewFilePath);
+        }}
+      />
 
       {/* Upload-Modal */}
       <UploadModal 
