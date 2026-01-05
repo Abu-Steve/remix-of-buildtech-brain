@@ -11,7 +11,9 @@ import {
   Check,
   Clock,
   Award,
-  WifiOff
+  WifiOff,
+  Link2,
+  CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +36,10 @@ interface DocumentCardProps {
   onView?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
+  onApprove?: () => void;
+  onRelations?: () => void;
   isAdmin?: boolean;
+  isChampion?: boolean;
 }
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
@@ -54,10 +59,11 @@ const statusConfig: Record<DocumentStatus, { icon: React.ElementType; label: str
   rejected: { icon: Clock, label: 'Rejected', className: 'bg-destructive/15 text-destructive border border-destructive/30' },
 };
 
-export function DocumentCard({ document, onView, onDownload, onDelete, isAdmin }: DocumentCardProps) {
+export function DocumentCard({ document, onView, onDownload, onDelete, onApprove, onRelations, isAdmin, isChampion }: DocumentCardProps) {
   const TypeIcon = typeIcons[document.type];
   const statusInfo = statusConfig[document.status];
   const StatusIcon = statusInfo.icon;
+  const canApprove = (isChampion || isAdmin) && document.status === 'pending';
 
   return (
     <div 
@@ -141,6 +147,36 @@ export function DocumentCard({ document, onView, onDownload, onDelete, isAdmin }
         >
           <Download className="w-4 h-4" />
         </Button>
+        
+        {/* Approve button for champions/admins on pending docs */}
+        {canApprove && onApprove && (
+          <Button 
+            size="icon" 
+            variant="default"
+            className="h-8 w-8 shrink-0 bg-success hover:bg-success/90"
+            onClick={(e) => {
+              e.stopPropagation();
+              onApprove();
+            }}
+          >
+            <CheckCircle className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Relations button for champions/admins */}
+        {(isChampion || isAdmin) && onRelations && (
+          <Button 
+            size="icon" 
+            variant="secondary"
+            className="h-8 w-8 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRelations();
+            }}
+          >
+            <Link2 className="w-4 h-4" />
+          </Button>
+        )}
         
         {isAdmin && onDelete && (
           <AlertDialog>

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { X, Upload, FileText, Tag, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Upload, FileText, Tag, Sparkles, AlertCircle, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedAudience, setSelectedAudience] = useState<string[]>(['all']);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
@@ -67,6 +68,17 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     );
   };
 
+  const toggleAudience = (value: string) => {
+    if (value === 'all') {
+      setSelectedAudience(['all']);
+    } else {
+      const newAudience = selectedAudience.includes(value)
+        ? selectedAudience.filter(a => a !== value)
+        : [...selectedAudience.filter(a => a !== 'all'), value];
+      setSelectedAudience(newAudience.length === 0 ? ['all'] : newAudience);
+    }
+  };
+
   const handleSubmit = async () => {
     if (file && title) {
       await uploadMutation.mutateAsync({
@@ -74,6 +86,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
         title,
         description,
         tags: selectedTags,
+        audience: selectedAudience,
       });
       handleClose();
     }
@@ -84,6 +97,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     setTitle('');
     setDescription('');
     setSelectedTags([]);
+    setSelectedAudience(['all']);
     setAiSuggestions([]);
     onClose();
   };
@@ -220,6 +234,31 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
                   onClick={() => toggleTag(tag.name)}
                 >
                   {tag.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Zielgruppe */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Zielgruppe (Audience)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'all', label: 'Alle' },
+                { value: 'office', label: 'Büro' },
+                { value: 'manager', label: 'Manager' },
+                { value: 'craftsman', label: 'Handwerker' },
+              ].map((option) => (
+                <Badge
+                  key={option.value}
+                  variant={selectedAudience.includes(option.value) ? "default" : "outline"}
+                  className="cursor-pointer transition-all"
+                  onClick={() => toggleAudience(option.value)}
+                >
+                  {option.label}
                 </Badge>
               ))}
             </div>
