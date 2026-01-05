@@ -20,6 +20,8 @@ export interface DbDocument {
   is_cached: boolean | null;
   created_at: string;
   updated_at: string;
+  visibility_scope: 'company_only' | 'all_companies' | null;
+  audience: string[] | null;
 }
 
 export interface DbTag {
@@ -117,20 +119,38 @@ interface UploadDocumentParams {
   title: string;
   description: string;
   tags: string[];
+  audience: string[];
 }
 
 export function useUploadDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ file, title, description, tags }: UploadDocumentParams) => {
-      // Get current user
+    mutationFn: async ({ file, title, description, tags, audience }: UploadDocumentParams) => {
+      // Get current user and their group
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upload file to storage
+      // Get user's group for storage path
+      const { data: userGroup } = await supabase
+        .from('user_groups')
+        .select('group_id, groups(name)')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      // Get user's department for storage path
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('department_enum')
+        .eq('id', user.id)
+        .single();
+
+      // Build storage path: company/department/file
+      const groupName = (userGroup?.groups as { name: string } | null)?.name?.toLowerCase().replace(/\s+/g, '_') || 'general';
+      const department = profile?.department_enum || 'office';
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      const fileName = `${groupName}/${department}/${Date.now()}-${file.name}`;
       
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -152,7 +172,7 @@ export function useUploadDocument() {
       };
       const docType = typeMap[fileExt?.toLowerCase() || ''] || 'other';
 
-      // Create document record
+      // Create document record with metadata
       const { data: document, error: docError } = await supabase
         .from('documents')
         .insert({
@@ -163,6 +183,9 @@ export function useUploadDocument() {
           file_path: fileName,
           file_size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
           uploaded_by: user.id,
+          group_id: userGroup?.group_id || null,
+          audience: audience,
+          visibility_scope: 'company_only', // Default, Champion can change during approval
         })
         .select()
         .single();
@@ -214,24 +237,36 @@ interface ApproveDocumentParams {
   documentId: string;
   groupId: string | null;
   status: 'approved' | 'best-practice' | 'rejected';
+  visibilityScope?: 'company_only' | 'all_companies';
+  audience?: string[];
 }
 
 export function useApproveDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ documentId, groupId, status }: ApproveDocumentParams) => {
+    mutationFn: async ({ documentId, groupId, status, visibilityScope, audience }: ApproveDocumentParams) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const updateData: Record<string, unknown> = {
+        status,
+        group_id: groupId,
+        approved_by: user.id,
+        approved_at: new Date().toISOString(),
+      };
+
+      if (visibilityScope) {
+        updateData.visibility_scope = visibilityScope;
+      }
+
+      if (audience) {
+        updateData.audience = audience;
+      }
+
       const { data, error } = await supabase
         .from('documents')
-        .update({
-          status,
-          group_id: groupId,
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', documentId)
         .select()
         .single();

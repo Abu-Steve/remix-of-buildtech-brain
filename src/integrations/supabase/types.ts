@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      document_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          relation_type: Database["public"]["Enums"]["document_relation_type"]
+          source_document_id: string
+          target_document_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          relation_type: Database["public"]["Enums"]["document_relation_type"]
+          source_document_id: string
+          target_document_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          relation_type?: Database["public"]["Enums"]["document_relation_type"]
+          source_document_id?: string
+          target_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relations_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relations_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_tags: {
         Row: {
           document_id: string
@@ -51,6 +93,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          audience: string[] | null
           created_at: string
           description: string | null
           downloads: number | null
@@ -66,10 +109,14 @@ export type Database = {
           updated_at: string
           uploaded_by: string | null
           version: string | null
+          visibility_scope:
+            | Database["public"]["Enums"]["visibility_scope"]
+            | null
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          audience?: string[] | null
           created_at?: string
           description?: string | null
           downloads?: number | null
@@ -85,10 +132,14 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           version?: string | null
+          visibility_scope?:
+            | Database["public"]["Enums"]["visibility_scope"]
+            | null
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          audience?: string[] | null
           created_at?: string
           description?: string | null
           downloads?: number | null
@@ -104,6 +155,9 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           version?: string | null
+          visibility_scope?:
+            | Database["public"]["Enums"]["visibility_scope"]
+            | null
         }
         Relationships: [
           {
@@ -144,6 +198,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           department: string | null
+          department_enum: Database["public"]["Enums"]["user_department"] | null
           email: string
           id: string
           name: string
@@ -153,6 +208,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           department?: string | null
+          department_enum?:
+            | Database["public"]["Enums"]["user_department"]
+            | null
           email: string
           id: string
           name: string
@@ -162,6 +220,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           department?: string | null
+          department_enum?:
+            | Database["public"]["Enums"]["user_department"]
+            | null
           email?: string
           id?: string
           name?: string
@@ -242,6 +303,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_document: {
+        Args: { _doc_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -256,6 +321,14 @@ export type Database = {
     }
     Enums: {
       app_role: "employee" | "champion" | "administrator"
+      document_relation_type:
+        | "extends"
+        | "references"
+        | "supersedes"
+        | "depends_on"
+        | "implements"
+        | "explains"
+        | "related_to"
       document_status: "pending" | "approved" | "best-practice" | "rejected"
       document_type:
         | "pdf"
@@ -265,6 +338,8 @@ export type Database = {
         | "drawing"
         | "image"
         | "other"
+      user_department: "office" | "manager" | "craftsman"
+      visibility_scope: "company_only" | "all_companies"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -393,6 +468,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["employee", "champion", "administrator"],
+      document_relation_type: [
+        "extends",
+        "references",
+        "supersedes",
+        "depends_on",
+        "implements",
+        "explains",
+        "related_to",
+      ],
       document_status: ["pending", "approved", "best-practice", "rejected"],
       document_type: [
         "pdf",
@@ -403,6 +487,8 @@ export const Constants = {
         "image",
         "other",
       ],
+      user_department: ["office", "manager", "craftsman"],
+      visibility_scope: ["company_only", "all_companies"],
     },
   },
 } as const

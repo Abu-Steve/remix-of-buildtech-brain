@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, name, groupId, role } = await req.json();
+    const { email, password, name, groupId, role, department } = await req.json();
 
     if (!email || !password || !name || !groupId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -85,6 +85,14 @@ Deno.serve(async (req) => {
         user_id: newUser.user.id,
         role: role,
       });
+    }
+
+    // Update profile with department
+    if (department) {
+      await adminClient
+        .from("profiles")
+        .update({ department_enum: department })
+        .eq("id", newUser.user.id);
     }
 
     // Add user to specific group (if not BuildTech which is global and auto-added)

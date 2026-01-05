@@ -27,6 +27,8 @@ export interface Document {
   rating?: number;
   downloads: number;
   isCached?: boolean;
+  audience?: string[];
+  visibilityScope?: 'company_only' | 'all_companies';
 }
 
 export interface User {
