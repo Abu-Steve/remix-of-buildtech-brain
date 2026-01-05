@@ -6,7 +6,7 @@ import { UploadModal } from '@/components/documents/UploadModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useDocuments, useTags, useDownloadDocument } from '@/hooks/useDocuments';
+import { useDocuments, useTags, useDownloadDocument, useViewDocument } from '@/hooks/useDocuments';
 import { supabase } from '@/integrations/supabase/client';
 import type { Document, Tag } from '@/types';
 
@@ -30,6 +30,7 @@ export default function Documents() {
   const { data: documentsData, isLoading: docsLoading } = useDocuments(filterStatus);
   const { data: tagsData = [], isLoading: tagsLoading } = useTags();
   const downloadMutation = useDownloadDocument();
+  const viewMutation = useViewDocument();
 
   // Map raw DB data to include file_path for download
   const rawDocuments = documentsData || [];
@@ -192,6 +193,7 @@ export default function Documents() {
             >
               <DocumentCard 
                 document={doc} 
+                onView={() => viewMutation.mutate(doc.filePath)}
                 onDownload={() => downloadMutation.mutate(doc.filePath)}
               />
             </div>
