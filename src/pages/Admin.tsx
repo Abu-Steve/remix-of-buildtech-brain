@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useUserRole';
 import { useEffect } from 'react';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Loader2, ShieldAlert, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -42,12 +43,12 @@ export default function Admin() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <AppLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Admin-Bereich</h1>
         <p className="text-muted-foreground">Benutzer und Systemeinstellungen verwalten</p>
       </div>
       <AdminUserManagement />
-    </div>
+    </AppLayout>
   );
 }
