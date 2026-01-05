@@ -274,3 +274,26 @@ export function useDownloadDocument() {
     },
   });
 }
+
+export function useViewDocument() {
+  return useMutation({
+    mutationFn: async (filePath: string) => {
+      // Get signed URL for viewing (no download header)
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(filePath, 300);
+
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Could not generate view link');
+
+      return data.signedUrl;
+    },
+    onSuccess: (signedUrl) => {
+      // Open in new tab for viewing
+      window.open(signedUrl, '_blank');
+    },
+    onError: (error) => {
+      toast.error(`Dokument konnte nicht geöffnet werden: ${error.message}`);
+    },
+  });
+}
