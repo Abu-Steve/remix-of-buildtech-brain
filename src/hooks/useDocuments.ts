@@ -237,10 +237,38 @@ export function useApproveDocument() {
         .single();
 
       if (error) throw error;
+
+      // If approved as best-practice, automatically add the "Best Practice" tag
+      if (status === 'best-practice') {
+        // Get the Best Practice tag id
+        const { data: bestPracticeTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', 'Best Practice')
+          .maybeSingle();
+
+        if (bestPracticeTag?.id) {
+          // Check if not already linked
+          const { data: existingLink } = await supabase
+            .from('document_tags')
+            .select('id')
+            .eq('document_id', documentId)
+            .eq('tag_id', bestPracticeTag.id)
+            .maybeSingle();
+
+          if (!existingLink) {
+            await supabase
+              .from('document_tags')
+              .insert({ document_id: documentId, tag_id: bestPracticeTag.id });
+          }
+        }
+      }
+
       return data;
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
       toast.success(`Document ${status === 'rejected' ? 'rejected' : 'approved'} successfully!`);
     },
     onError: (error) => {
