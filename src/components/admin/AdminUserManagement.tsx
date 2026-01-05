@@ -20,7 +20,7 @@ export function AdminUserManagement() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState('');
-  const [role, setRole] = useState<'employee' | 'champion'>('employee');
+  const [role, setRole] = useState<'employee' | 'champion' | 'administrator'>('employee');
   
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -222,13 +222,14 @@ export function AdminUserManagement() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as 'employee' | 'champion')} disabled={createUserMutation.isPending}>
+                <Select value={role} onValueChange={(v) => setRole(v as 'employee' | 'champion' | 'administrator')} disabled={createUserMutation.isPending}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="champion">Champion (can approve documents)</SelectItem>
+                    <SelectItem value="employee">Mitarbeiter</SelectItem>
+                    <SelectItem value="champion">Champion (kann Dokumente freigeben)</SelectItem>
+                    <SelectItem value="administrator">Administrator (Vollzugriff)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
