@@ -44,6 +44,7 @@ export function DocumentPreviewModal({
             </div>
           ) : isPdf ? (
             <iframe
+              key={objectUrl}
               title={title}
               src={objectUrl}
               className="w-full h-[70vh] rounded-md border"

@@ -288,15 +288,17 @@ export function useViewDocument() {
 
       // Chromium/Extensions may block top-level navigation to supabase.co,
       // but allow fetch/XHR. So we fetch the bytes and render from a blob URL.
-      const res = await fetch(data.signedUrl);
+      const res = await fetch(data.signedUrl, { cache: 'no-store' });
       if (!res.ok) throw new Error(`Preview failed (${res.status})`);
 
-      const blob = await res.blob();
+      const contentType = res.headers.get('content-type') || 'application/octet-stream';
+      const buf = await res.arrayBuffer();
+      const blob = new Blob([buf], { type: contentType });
       const objectUrl = URL.createObjectURL(blob);
 
       return {
         objectUrl,
-        contentType: blob.type || res.headers.get('content-type') || 'application/octet-stream',
+        contentType,
       };
     },
     onError: (error) => {
