@@ -90,45 +90,44 @@ export function DocumentCard({ document, onView, onDownload }: DocumentCardProps
         )}
       </div>
 
-      {/* Status and metadata */}
+      {/* Status and metadata row */}
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <Badge className={cn("text-xs", statusInfo.className)}>
           <StatusIcon className="w-3 h-3 mr-1" />
           {statusInfo.label}
         </Badge>
         
-        {/* Version/Size - hidden on hover, buttons shown instead */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:opacity-0 transition-opacity">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>v{document.version}</span>
           <span>•</span>
           <span>{document.size}</span>
         </div>
+      </div>
 
-        {/* Hover actions - replaces version/size area */}
-        <div className="absolute right-5 bottom-5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button 
-            size="sm" 
-            variant="hero"
-            className="h-7 text-xs px-3"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView?.();
-            }}
-          >
-            Dokument öffnen
-          </Button>
-          <Button 
-            size="icon" 
-            variant="secondary"
-            className="h-7 w-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDownload?.();
-            }}
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+      {/* Hover actions - full width row below status */}
+      <div className="flex items-center gap-2 mt-3 opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-10 transition-all duration-300">
+        <Button 
+          size="sm" 
+          variant="hero"
+          className="flex-1 h-8 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            onView?.();
+          }}
+        >
+          Dokument öffnen
+        </Button>
+        <Button 
+          size="icon" 
+          variant="secondary"
+          className="h-8 w-8 shrink-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDownload?.();
+          }}
+        >
+          <Download className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* Rating */}
