@@ -250,29 +250,23 @@ export function useApproveDocument() {
 }
 
 export function useDownloadDocument() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (filePath: string) => {
-      // Get signed URL for download
+      // Get signed URL for download with download option
       const { data, error } = await supabase.storage
         .from('documents')
-        .createSignedUrl(filePath, 60); // 60 seconds expiry
+        .createSignedUrl(filePath, 300, { 
+          download: filePath.split('/').pop() || 'document'
+        });
 
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('Could not generate download link');
 
-      // Trigger download
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = filePath.split('/').pop() || 'document';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
       return data.signedUrl;
     },
-    onSuccess: () => {
+    onSuccess: (signedUrl) => {
+      // Use window.location for direct download - avoids popup blocker
+      window.location.href = signedUrl;
       toast.success('Download gestartet');
     },
     onError: (error) => {
