@@ -286,11 +286,17 @@ export function useViewDocument() {
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('Could not generate view link');
 
+      // Use iframe approach or direct navigation to avoid popup blocker
+      // Create a temporary link and use location.assign
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       return data.signedUrl;
-    },
-    onSuccess: (signedUrl) => {
-      // Open in new tab for viewing
-      window.open(signedUrl, '_blank');
     },
     onError: (error) => {
       toast.error(`Dokument konnte nicht geöffnet werden: ${error.message}`);
