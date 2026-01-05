@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { X, CheckCircle, XCircle, Award, Globe, Building2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useApproveDocument, useGroups } from '@/hooks/useDocuments';
+import { useApproveDocument } from '@/hooks/useDocuments';
 
 interface ApprovalDialogProps {
   isOpen: boolean;
@@ -18,16 +17,14 @@ export function ApprovalDialog({
   documentId, 
   documentTitle,
 }: ApprovalDialogProps) {
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [visibilityScope, setVisibilityScope] = useState<'company_only' | 'all_companies'>('company_only');
   
-  const { data: groups = [] } = useGroups();
   const approveMutation = useApproveDocument();
 
   const handleApprove = (status: 'approved' | 'best-practice') => {
     approveMutation.mutate({
       documentId,
-      groupId: selectedGroup || null,
+      groupId: null,
       status,
       visibilityScope,
       audience: ['all'],
@@ -71,12 +68,11 @@ export function ApprovalDialog({
           </Button>
         </div>
 
-        <div className="p-6 space-y-5">
-          {/* Visibility Scope */}
+        <div className="p-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
               <Globe className="w-4 h-4" />
-              Sichtbarkeit
+              Wer darf dieses Dokument sehen?
             </label>
             <div className="flex gap-2">
               <Badge
@@ -95,28 +91,7 @@ export function ApprovalDialog({
                 <Globe className="w-4 h-4 mr-2" />
                 Alle Firmen
               </Badge>
-          </div>
-          </div>
-
-          {/* Group selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Firma zuweisen (optional)
-            </label>
-            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-              <SelectTrigger>
-                <SelectValue placeholder="Firma auswählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                    {group.is_global && ' (Global)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            </div>
           </div>
         </div>
 
