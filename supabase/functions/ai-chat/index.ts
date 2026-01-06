@@ -280,7 +280,7 @@ ${documentContext}
 
 ANTWORTFORMAT:
 - Bei Datenbank-Antworten: Nenne am Ende "📚 Quellen: [Liste der Dokumenttitel]"
-- Bei externen Antworten: Beginne mit "⚠️ Externe Quelle" und erkläre, warum die Datenbank keine Antwort liefern konnte`;
+- Bei externen Antworten: Beginne mit "⚠️ Externe Quelle" und erkläre, warum die Datenbank keine Antwort liefern konnte. Nenne dann am Ende IMMER die verwendeten externen Quellen mit "🌐 Externe Quellen: [Liste der URLs oder Quellenangaben wie z.B. DIN-Normen, Gesetze, Richtlinien]"`;
 
     // Call Lovable AI Gateway
     console.log('Rufe Lovable AI Gateway auf...');
