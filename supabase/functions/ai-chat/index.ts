@@ -66,7 +66,7 @@ serve(async (req) => {
         id,
         title,
         description,
-        document_type,
+        type,
         visibility_scope,
         status,
         group_id,
@@ -115,7 +115,7 @@ serve(async (req) => {
         const visibility = doc.visibility_scope === 'all_companies' ? 'Alle Firmen' : 'Nur eigene Firma';
         
         documentContext += `--- Dokument: "${doc.title}" ---\n`;
-        documentContext += `Typ: ${doc.document_type}\n`;
+        documentContext += `Typ: ${doc.type}\n`;
         documentContext += `Beschreibung: ${doc.description || 'Keine Beschreibung'}\n`;
         documentContext += `Firma: ${groupName}\n`;
         documentContext += `Sichtbarkeit: ${visibility}\n`;
@@ -126,7 +126,7 @@ serve(async (req) => {
         documentSources.push({
           id: doc.id,
           title: doc.title,
-          type: doc.document_type,
+          type: doc.type,
           excerpt: doc.description?.substring(0, 100) || 'Dokument aus der BuildTech Wissensdatenbank'
         });
       }
