@@ -211,6 +211,139 @@ serve(async (req) => {
       }
     }
 
+    // ===== FORUM DATEN LADEN =====
+    const { data: forumQuestions, error: forumError } = await supabase
+      .from('forum_questions')
+      .select(`
+        id,
+        title,
+        content,
+        is_resolved,
+        created_at,
+        author_id,
+        forum_answers (
+          id,
+          content,
+          is_accepted,
+          upvotes,
+          author_id
+        ),
+        forum_question_tags (
+          tags (name)
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (forumError) {
+      console.error('Fehler beim Laden der Forum-Fragen:', forumError);
+    }
+
+    console.log(`${forumQuestions?.length || 0} Forum-Fragen geladen`);
+
+    // Build forum context
+    let forumContext = "";
+    const forumSources: { id: string; title: string; type: string; excerpt: string }[] = [];
+
+    // Add mock forum data that's always available
+    const mockForumData = [
+      {
+        title: 'Welche Anforderungen gelten für Brandschotts bei Kabeldurchführungen?',
+        content: 'Wir installieren elektrische Kabel durch brandgeschützte Wände. Welche Zertifizierungen benötigen wir für die Brandschottmaterialien?',
+        tags: ['Brandschutz', 'Elektrik'],
+        answers: ['Für Brandschotts bei Kabeldurchführungen benötigen Sie Materialien mit einer gültigen allgemeinen bauaufsichtlichen Zulassung (abZ) oder einer europäischen technischen Bewertung (ETA). Die Feuerwiderstandsklasse muss mindestens der der durchdrungenen Wand entsprechen (z.B. F90 bei einer F90-Wand). Achten Sie auf die korrekte Verarbeitung gemäß Herstelleranleitung.'],
+        isResolved: false
+      },
+      {
+        title: 'Betonhärtung bei Winterbedingungen - Best Practices?',
+        content: 'Wir haben einen Betonguß für nächste Woche geplant bei erwarteten Temperaturen um 2°C. Welche Vorsichtsmaßnahmen sollten wir treffen?',
+        tags: ['Beton', 'Wetter'],
+        answers: [
+          'Bei Temperaturen um 2°C sollten Sie folgende Maßnahmen ergreifen: 1. Frischbeton auf mindestens 10°C vorwärmen, 2. Schalung und Bewehrung eisfrei halten, 3. Betonoberfläche mit Wärmedämmmatten abdecken, 4. Nachbehandlung verlängern, 5. Frostschutzmittel als Zusatz erwägen.',
+          'Ergänzend: Die DIN 1045-3 schreibt vor, dass Beton in den ersten 3 Tagen nicht unter 5°C abkühlen darf. Eine Beheizung des Arbeitsbereichs ist bei solchen Temperaturen oft unumgänglich.'
+        ],
+        isResolved: true
+      },
+      {
+        title: 'DIN 4109 Schallschutzanforderungen für Trennwände',
+        content: 'Welcher Mindest-R\'w-Wert ist für Trennwände in Wohngebäuden nach aktuellen Normen erforderlich?',
+        tags: ['Schallschutz', 'Bauvorschriften'],
+        answers: ['Nach DIN 4109-1:2018 beträgt der Mindest-R\'w-Wert für Trennwände zwischen Wohnungen 53 dB. Für erhöhten Schallschutz nach VDI 4100:2012 SSt II werden 56 dB empfohlen, für SSt III sogar 59 dB.'],
+        isResolved: true
+      },
+      {
+        title: 'Absturzsicherungssysteme für Flachdachwartungszugang',
+        content: 'Welche permanenten Absturzsicherungen werden für regelmäßige Dachwartungszugangspunkte empfohlen?',
+        tags: ['Sicherheit', 'Dacharbeiten'],
+        answers: ['Für regelmäßigen Wartungszugang empfehlen wir: 1. Fest installierte Anschlagpunkte nach EN 795, 2. Horizontale Seilsicherungssysteme (Seilsicherungslinien), 3. Bei häufigem Zugang: Geländersysteme. Die DGUV Regel 101-038 gibt detaillierte Vorgaben.'],
+        isResolved: false
+      },
+      {
+        title: 'VOB-Gewährleistungsfristen für verschiedene Baukomponenten',
+        content: 'Kann jemand die unterschiedlichen Gewährleistungsfristen nach VOB für Rohbauarbeiten vs. Ausbauarbeiten erklären?',
+        tags: ['VOB', 'Recht'],
+        answers: [
+          'Nach VOB/B §13 beträgt die Gewährleistungsfrist grundsätzlich 4 Jahre. Für das Bauwerk selbst (tragende Konstruktion, Dach) können vertraglich 5 Jahre vereinbart werden.',
+          'Wichtig: Die BGB-Gewährleistung beträgt 5 Jahre (§634a BGB). Viele Auftraggeber vereinbaren daher im VOB-Vertrag explizit 5 Jahre, um keinen Nachteil gegenüber BGB zu haben.'
+        ],
+        isResolved: true
+      }
+    ];
+
+    forumContext = "\n\n=== FRAGEN & ANTWORTEN AUS DEM FORUM ===\n\n";
+    
+    // First add mock data (always available)
+    for (const q of mockForumData) {
+      forumContext += `--- Forum-Frage: "${q.title}" ---\n`;
+      forumContext += `Frage: ${q.content}\n`;
+      forumContext += `Tags: ${q.tags.join(', ')}\n`;
+      forumContext += `Status: ${q.isResolved ? 'Gelöst' : 'Offen'}\n`;
+      if (q.answers.length > 0) {
+        forumContext += `Antworten:\n`;
+        q.answers.forEach((a, i) => {
+          forumContext += `  ${i + 1}. ${a}\n`;
+        });
+      }
+      forumContext += '\n';
+
+      forumSources.push({
+        id: `mock-${q.title.substring(0, 20)}`,
+        title: q.title,
+        type: 'forum',
+        excerpt: q.content.substring(0, 100)
+      });
+    }
+
+    // Then add real forum data from database
+    if (forumQuestions && forumQuestions.length > 0) {
+      for (const q of forumQuestions) {
+        const tags = q.forum_question_tags?.map((qt: any) => qt.tags?.name).filter(Boolean).join(', ') || '';
+        const answers = q.forum_answers || [];
+        
+        forumContext += `--- Forum-Frage: "${q.title}" ---\n`;
+        forumContext += `Frage: ${q.content}\n`;
+        if (tags) forumContext += `Tags: ${tags}\n`;
+        forumContext += `Status: ${q.is_resolved ? 'Gelöst' : 'Offen'}\n`;
+        forumContext += `Erstellt: ${new Date(q.created_at).toLocaleDateString('de-DE')}\n`;
+        
+        if (answers.length > 0) {
+          forumContext += `Antworten (${answers.length}):\n`;
+          for (const a of answers) {
+            const accepted = a.is_accepted ? ' ✓ Akzeptiert' : '';
+            forumContext += `  - ${a.content}${accepted}\n`;
+          }
+        }
+        forumContext += '\n';
+
+        forumSources.push({
+          id: q.id,
+          title: q.title,
+          type: 'forum',
+          excerpt: q.content.substring(0, 100)
+        });
+      }
+    }
+
     // Build context from accessible documents
     let documentContext = "";
     const documentSources: { id: string; title: string; type: string; excerpt: string }[] = [];
@@ -253,17 +386,23 @@ serve(async (req) => {
       documentContext = "Keine Dokumente in der Datenbank verfügbar, auf die dieser Benutzer Zugriff hat.";
     }
 
-    // System prompt - prioritize database, then external
+    // Combine all sources
+    const allSources = [...documentSources, ...forumSources];
+
+    // System prompt - prioritize database and forum, then external
     const systemPrompt = `Du bist der BuildTech KI-Assistent für Dokumenten- und Wissensmanagement im Bauwesen.
 
 KRITISCHE REGELN - STRIKT BEFOLGEN:
 
-1. DATENBANK ZUERST: Du MUSST zuerst versuchen, die Frage anhand der unten aufgeführten Dokumente aus der Datenbank zu beantworten.
+1. INTERNE QUELLEN ZUERST: Du MUSST zuerst versuchen, die Frage anhand der folgenden internen Quellen zu beantworten:
+   - Dokumente aus der Wissensdatenbank
+   - Fragen und Antworten aus dem Forum
 
-2. QUELLENANGABE PFLICHT: Wenn du Informationen aus den Dokumenten verwendest, MUSST du die Quelle(n) nennen:
-   Format: "Laut dem Dokument '[Dokumenttitel]'..." oder "📚 Quelle: [Dokumenttitel]"
+2. QUELLENANGABE PFLICHT: Wenn du Informationen aus internen Quellen verwendest, MUSST du die Quelle(n) nennen:
+   - Für Dokumente: "📚 Quelle: [Dokumenttitel]"
+   - Für Forum: "💬 Forum-Diskussion: [Fragentitel]"
 
-3. NUR BEI BEDARF EXTERN: Nur wenn die Frage nicht mit den verfügbaren Dokumenten beantwortet werden kann, darfst du externes Wissen verwenden.
+3. NUR BEI BEDARF EXTERN: Nur wenn die Frage nicht mit den verfügbaren internen Quellen beantwortet werden kann, darfst du externes Wissen verwenden.
    Wenn du externes Wissen verwendest, MUSST du dies DEUTLICH kennzeichnen:
    "⚠️ HINWEIS: Diese Information stammt aus externem Wissen, nicht aus Ihrer Datenbank. Bitte verifizieren Sie diese Angaben."
 
@@ -274,13 +413,19 @@ KRITISCHE REGELN - STRIKT BEFOLGEN:
    - Weise darauf hin, den Originaltext zu prüfen
    - Füge hinzu: "Bitte prüfen Sie den Originaltext für verbindliche Aussagen."
 
-6. KEINE HALLUZINATIONEN: Erfinde keine Dokumente oder Quellen. Wenn du etwas nicht weißt, sage es ehrlich.
+6. KEINE HALLUZINATIONEN: Erfinde keine Dokumente, Forum-Beiträge oder Quellen. Wenn du etwas nicht weißt, sage es ehrlich.
+
+7. FORUM-WISSEN NUTZEN: Das Forum enthält wertvolles Praxiswissen von Kollegen. Wenn eine Frage bereits im Forum beantwortet wurde, nutze diese Informationen!
 
 ${documentContext}
 
+${forumContext}
+
 ANTWORTFORMAT:
 - Bei Datenbank-Antworten: Nenne am Ende "📚 Quellen: [Liste der Dokumenttitel]"
-- Bei externen Antworten: Beginne mit "⚠️ Externe Quelle" und erkläre, warum die Datenbank keine Antwort liefern konnte. Nenne dann am Ende IMMER die verwendeten externen Quellen mit "🌐 Externe Quellen: [Liste der URLs oder Quellenangaben wie z.B. DIN-Normen, Gesetze, Richtlinien]"`;
+- Bei Forum-Antworten: Nenne am Ende "💬 Forum: [Liste der relevanten Forum-Fragen]"
+- Bei kombinierten Antworten: Nenne beide Quellentypen
+- Bei externen Antworten: Beginne mit "⚠️ Externe Quelle" und erkläre, warum die internen Quellen keine Antwort liefern konnten. Nenne dann am Ende IMMER die verwendeten externen Quellen mit "🌐 Externe Quellen: [Liste der URLs oder Quellenangaben wie z.B. DIN-Normen, Gesetze, Richtlinien]"`;
 
     // Call OpenAI API
     console.log('Rufe OpenAI API auf...');
@@ -322,9 +467,9 @@ ANTWORTFORMAT:
     const aiData = await aiResponse.json();
     const generatedText = aiData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.';
 
-    // Determine which documents were mentioned
-    const mentionedDocs = documentSources.filter(doc => 
-      generatedText.toLowerCase().includes(doc.title.toLowerCase())
+    // Determine which sources were mentioned (documents and forum)
+    const mentionedDocs = allSources.filter(source => 
+      generatedText.toLowerCase().includes(source.title.toLowerCase())
     );
 
     // Check if response uses external knowledge
@@ -332,14 +477,20 @@ ANTWORTFORMAT:
                        generatedText.toLowerCase().includes('extern') ||
                        generatedText.toLowerCase().includes('nicht aus ihrer datenbank');
 
-    console.log(`Antwort generiert. Externe Quelle: ${isExternal}, Erwähnte Dokumente: ${mentionedDocs.length}`);
+    // Separate document and forum sources
+    const docSources = mentionedDocs.filter(s => s.type !== 'forum');
+    const forumSourcesMentioned = mentionedDocs.filter(s => s.type === 'forum');
+
+    console.log(`Antwort generiert. Externe Quelle: ${isExternal}, Dokumente: ${docSources.length}, Forum: ${forumSourcesMentioned.length}`);
 
     return new Response(
       JSON.stringify({ 
         content: generatedText,
-        sources: mentionedDocs,
+        sources: docSources,
+        forumSources: forumSourcesMentioned,
         isExternal,
-        accessibleDocumentCount: accessibleDocuments.length
+        accessibleDocumentCount: accessibleDocuments.length,
+        forumQuestionsCount: (forumQuestions?.length || 0) + mockForumData.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
