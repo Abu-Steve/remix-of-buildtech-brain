@@ -59,7 +59,7 @@ serve(async (req) => {
     // Service client for DB access
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Fetch ALL approved documents first
+    // Fetch ALL approved documents first (including file_path)
     const { data: allDocuments, error: docsError } = await supabase
       .from('documents')
       .select(`
@@ -67,6 +67,7 @@ serve(async (req) => {
         title,
         description,
         type,
+        file_path,
         visibility_scope,
         status,
         group_id,
@@ -102,6 +103,84 @@ serve(async (req) => {
 
     console.log(`Benutzer ${userData.user.email} hat Zugriff auf ${accessibleDocuments.length} von ${allDocuments?.length || 0} Dokumenten`);
 
+    // Function to extract text content from documents
+    async function extractDocumentContent(doc: any): Promise<string> {
+      if (!doc.file_path) {
+        return '';
+      }
+
+      try {
+        // Download file from storage
+        const { data: fileData, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(doc.file_path);
+
+        if (downloadError || !fileData) {
+          console.error(`Fehler beim Herunterladen von ${doc.file_path}:`, downloadError);
+          return '';
+        }
+
+        const fileType = doc.type?.toLowerCase() || '';
+        const fileName = doc.file_path.toLowerCase();
+
+        // Handle text-based files
+        if (fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.csv')) {
+          const text = await fileData.text();
+          return text.substring(0, 10000); // Limit to 10k chars
+        }
+
+        // Handle PDF files - extract text using basic parsing
+        if (fileType === 'pdf' || fileName.endsWith('.pdf')) {
+          const arrayBuffer = await fileData.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          
+          // Simple PDF text extraction (looks for text streams)
+          let text = '';
+          const decoder = new TextDecoder('utf-8', { fatal: false });
+          const content = decoder.decode(bytes);
+          
+          // Extract text between BT and ET markers (PDF text objects)
+          const textMatches = content.match(/BT[\s\S]*?ET/g) || [];
+          for (const match of textMatches) {
+            // Extract text from Tj and TJ operators
+            const tjMatches = match.match(/\(([^)]*)\)\s*Tj/g) || [];
+            for (const tj of tjMatches) {
+              const textContent = tj.match(/\(([^)]*)\)/);
+              if (textContent) {
+                text += textContent[1] + ' ';
+              }
+            }
+          }
+          
+          // If no text extracted via BT/ET, try to find readable strings
+          if (text.length < 100) {
+            // Look for sequences of printable ASCII characters
+            const readableMatches = content.match(/[\x20-\x7E]{20,}/g) || [];
+            text = readableMatches
+              .filter(s => !s.includes('<<') && !s.includes('>>') && !s.includes('/'))
+              .join(' ');
+          }
+          
+          // Clean up the text
+          text = text
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          return text.substring(0, 10000); // Limit to 10k chars
+        }
+
+        // For other file types, return empty (can't extract)
+        console.log(`Dateityp ${fileType} wird nicht für Textextraktion unterstützt`);
+        return '';
+      } catch (error) {
+        console.error(`Fehler beim Extrahieren von Inhalt aus ${doc.file_path}:`, error);
+        return '';
+      }
+    }
+
     // Build context from accessible documents
     let documentContext = "";
     const documentSources: { id: string; title: string; type: string; excerpt: string }[] = [];
@@ -114,6 +193,9 @@ serve(async (req) => {
         const groupName = (doc.groups as any)?.name || 'Unbekannt';
         const visibility = doc.visibility_scope === 'all_companies' ? 'Alle Firmen' : 'Nur eigene Firma';
         
+        // Extract actual document content
+        const documentContent = await extractDocumentContent(doc);
+        
         documentContext += `--- Dokument: "${doc.title}" ---\n`;
         documentContext += `Typ: ${doc.type}\n`;
         documentContext += `Beschreibung: ${doc.description || 'Keine Beschreibung'}\n`;
@@ -121,13 +203,20 @@ serve(async (req) => {
         documentContext += `Sichtbarkeit: ${visibility}\n`;
         documentContext += `Status: ${doc.status === 'best-practice' ? 'Best Practice' : 'Genehmigt'}\n`;
         if (tags) documentContext += `Tags: ${tags}\n`;
-        documentContext += `Erstellt: ${new Date(doc.created_at).toLocaleDateString('de-DE')}\n\n`;
+        documentContext += `Erstellt: ${new Date(doc.created_at).toLocaleDateString('de-DE')}\n`;
+        
+        if (documentContent) {
+          documentContext += `\nINHALT DES DOKUMENTS:\n${documentContent}\n`;
+        } else {
+          documentContext += `\n(Dokumentinhalt konnte nicht extrahiert werden - Binärdatei oder nicht unterstütztes Format)\n`;
+        }
+        documentContext += '\n';
         
         documentSources.push({
           id: doc.id,
           title: doc.title,
           type: doc.type,
-          excerpt: doc.description?.substring(0, 100) || 'Dokument aus der BuildTech Wissensdatenbank'
+          excerpt: documentContent ? documentContent.substring(0, 200) : (doc.description?.substring(0, 100) || 'Dokument aus der BuildTech Wissensdatenbank')
         });
       }
     } else {
