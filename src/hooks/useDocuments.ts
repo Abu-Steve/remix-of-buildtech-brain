@@ -249,7 +249,7 @@ export function useUploadDocument() {
 
 interface ApproveDocumentParams {
   documentId: string;
-  groupId: string | null;
+  visibilityScope: 'company_only' | 'all_companies';
   status: 'approved' | 'best-practice' | 'rejected';
 }
 
@@ -257,7 +257,7 @@ export function useApproveDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ documentId, groupId, status }: ApproveDocumentParams) => {
+    mutationFn: async ({ documentId, visibilityScope, status }: ApproveDocumentParams) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -265,7 +265,7 @@ export function useApproveDocument() {
         .from('documents')
         .update({
           status,
-          group_id: groupId,
+          visibility_scope: visibilityScope,
           approved_by: user.id,
           approved_at: new Date().toISOString(),
         })

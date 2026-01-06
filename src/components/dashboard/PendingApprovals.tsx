@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useApproveDocument, useDocuments, useGroups } from '@/hooks/useDocuments';
+import { useApproveDocument, useDocuments } from '@/hooks/useDocuments';
 import { useIsChampion } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 
@@ -32,12 +32,11 @@ function timeAgo(dateIso?: string) {
 export function PendingApprovals() {
   const isChampion = useIsChampion();
   const { data: docs = [], isLoading, error } = useDocuments('pending');
-  const { data: groups = [] } = useGroups();
   const approveMutation = useApproveDocument();
 
   const [showAll, setShowAll] = useState(false);
   const [activeDoc, setActiveDoc] = useState<PendingDoc | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [selectedVisibility, setSelectedVisibility] = useState<'company_only' | 'all_companies'>('company_only');
 
   const pendingDocs = docs || [];
   const visibleDocs = useMemo(
@@ -47,7 +46,7 @@ export function PendingApprovals() {
 
   const openReview = (doc: PendingDoc) => {
     setActiveDoc(doc);
-    setSelectedGroupId(doc.group_id ?? '__general__');
+    setSelectedVisibility(doc.visibility_scope ?? 'company_only');
   };
 
   const handleDecision = async (status: 'approved' | 'best-practice' | 'rejected') => {
@@ -57,16 +56,9 @@ export function PendingApprovals() {
       return;
     }
 
-    const groupId = selectedGroupId === '__general__' ? null : selectedGroupId;
-
-    if (status !== 'rejected' && !groupId && selectedGroupId !== '__general__') {
-      toast.error('Bitte wählen Sie eine Firma oder Allgemein');
-      return;
-    }
-
     await approveMutation.mutateAsync({
       documentId: activeDoc.id,
-      groupId,
+      visibilityScope: selectedVisibility,
       status,
     });
 
@@ -150,7 +142,7 @@ export function PendingApprovals() {
                     className="h-9 text-destructive hover:text-destructive"
                     onClick={() => {
                       setActiveDoc(doc);
-                      setSelectedGroupId(doc.group_id ?? '__general__');
+                      setSelectedVisibility(doc.visibility_scope ?? 'company_only');
                       handleDecision('rejected');
                     }}
                     disabled={!isChampion || approveMutation.isPending}
@@ -183,7 +175,7 @@ export function PendingApprovals() {
           <DialogHeader>
             <DialogTitle>Dokument prüfen</DialogTitle>
             <DialogDescription>
-              Wählen Sie die Firma (oder Allgemein) und genehmigen oder lehnen Sie ab.
+              Wählen Sie die Sichtbarkeit und genehmigen oder lehnen Sie ab.
             </DialogDescription>
           </DialogHeader>
 
@@ -196,21 +188,14 @@ export function PendingApprovals() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Firma</p>
-              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <p className="text-sm font-medium text-foreground">Sichtbarkeit</p>
+              <Select value={selectedVisibility} onValueChange={(v) => setSelectedVisibility(v as 'company_only' | 'all_companies')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Firma auswählen..." />
+                  <SelectValue placeholder="Sichtbarkeit auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__general__">Allgemein (alle Firmen)</SelectItem>
-                  <ScrollArea className="h-56">
-                    {groups.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.name}
-                        {g.is_global ? ' (Alle Zugriff)' : ''}
-                      </SelectItem>
-                    ))}
-                  </ScrollArea>
+                  <SelectItem value="company_only">Nur eigene Firma</SelectItem>
+                  <SelectItem value="all_companies">Alle Firmen</SelectItem>
                 </SelectContent>
               </Select>
             </div>
