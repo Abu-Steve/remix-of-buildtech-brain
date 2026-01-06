@@ -36,9 +36,9 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
   };
 
   const quickQuestions = [
-    "Welche Sicherheitsanforderungen gelten für Gerüste?",
-    "Erkläre die VOB-Vorschriften für Betonarbeiten",
-    "Best Practices für Kellerabdichtung",
+    "Welche Dokumente habe ich Zugriff?",
+    "Zeige mir Best Practice Dokumente",
+    "Welche Sicherheitsanforderungen gibt es?",
   ];
 
   return (
@@ -54,8 +54,8 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
               BuildTech KI-Assistent
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md">
-              Fragen Sie mich zu Baunormen, Vorschriften oder Best Practices. 
-              Ich gebe Antworten basierend auf unserer verifizierten Wissensdatenbank.
+              Fragen Sie mich zu Ihren Dokumenten und Baunormen. 
+              Ich durchsuche zuerst Ihre zugänglichen Dokumente und nutze nur bei Bedarf externes Wissen.
             </p>
             
             {/* Schnellfragen */}
@@ -112,7 +112,7 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            KI-Antworten basieren auf der verifizierten BuildTech-Wissensdatenbank. Überprüfen Sie kritische Informationen immer.
+            Der Assistent durchsucht zuerst Ihre zugänglichen Dokumente. Quellen werden immer angegeben.
           </p>
         </div>
       </div>
