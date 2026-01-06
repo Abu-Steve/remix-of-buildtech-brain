@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as pdfjsLib from "https://esm.sh/pdfjs-dist@4.10.38/legacy/build/pdf.mjs?deno";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,94 +104,65 @@ serve(async (req) => {
 
     console.log(`Benutzer ${userData.user.email} hat Zugriff auf ${accessibleDocuments.length} von ${allDocuments?.length || 0} Dokumenten`);
 
-    // Function to extract text content from PDF using improved parsing
-    function extractPdfText(bytes: Uint8Array): string {
+    // ---- PDF/Text Extraktion (robust) ----
+    function normalizeExtractedText(text: string): string {
+      return text.replace(/\s+/g, ' ').replace(/\u0000/g, '').trim();
+    }
+
+    function isUsableText(text: string): boolean {
+      const t = normalizeExtractedText(text);
+      if (t.length < 120) return false;
+      const letters = (t.match(/[A-Za-zÄÖÜäöüß]/g) || []).length;
+      const ratio = letters / Math.max(1, t.length);
+      if (ratio < 0.18) return false;
+      const words = t.split(/\s+/).length;
+      return words >= 15;
+    }
+
+    async function extractPdfTextWithPdfJs(bytes: Uint8Array): Promise<string> {
+      const getDocument = (pdfjsLib as any).getDocument;
+      if (typeof getDocument !== 'function') {
+        throw new Error('pdfjs getDocument nicht verfügbar');
+      }
+
+      const loadingTask = getDocument({ data: bytes, disableWorker: true });
+      const pdf = await loadingTask.promise;
+
+      const maxPages = Math.min(Number(pdf.numPages || 0), 12);
+      let out = '';
+
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const tc = await page.getTextContent();
+        const items = (tc?.items || []) as any[];
+        const pageText = items
+          .map((it) => (typeof it?.str === 'string' ? it.str : ''))
+          .filter(Boolean)
+          .join(' ');
+
+        if (pageText) out += pageText + '\n';
+        if (out.length > 30000) break;
+      }
+
+      return normalizeExtractedText(out);
+    }
+
+    // Fallback (heuristisch) - nur wenn pdf.js nichts Sinnvolles liefert
+    function extractPdfTextHeuristic(bytes: Uint8Array): string {
       const decoder = new TextDecoder('utf-8', { fatal: false });
       const content = decoder.decode(bytes);
-      
+
       let extractedText = '';
-      
-      // Method 1: Extract text from stream objects (most PDFs)
-      const streamMatches = content.match(/stream\s*([\s\S]*?)endstream/g) || [];
-      for (const stream of streamMatches) {
-        // Look for readable text patterns in streams
-        const textParts = stream.match(/\(([^\\)]{2,})\)/g) || [];
-        for (const part of textParts) {
-          const cleaned = part.slice(1, -1)
-            .replace(/\\n/g, ' ')
-            .replace(/\\r/g, '')
-            .replace(/\\\(/g, '(')
-            .replace(/\\\)/g, ')')
-            .replace(/\\\\/g, '\\');
-          if (cleaned.length > 1 && /[a-zA-ZäöüÄÖÜß]/.test(cleaned)) {
-            extractedText += cleaned + ' ';
-          }
-        }
-        
-        // Also look for hex-encoded text <hexstring>
-        const hexMatches = stream.match(/<([0-9A-Fa-f]+)>/g) || [];
-        for (const hex of hexMatches) {
-          try {
-            const hexContent = hex.slice(1, -1);
-            if (hexContent.length >= 4 && hexContent.length % 2 === 0) {
-              let decoded = '';
-              for (let i = 0; i < hexContent.length; i += 2) {
-                const charCode = parseInt(hexContent.substr(i, 2), 16);
-                if (charCode >= 32 && charCode < 127) {
-                  decoded += String.fromCharCode(charCode);
-                }
-              }
-              if (decoded.length > 2 && /[a-zA-Z]/.test(decoded)) {
-                extractedText += decoded + ' ';
-              }
-            }
-          } catch { /* ignore hex decode errors */ }
-        }
-      }
-      
-      // Method 2: Extract from BT...ET text blocks
       const btEtMatches = content.match(/BT[\s\S]*?ET/g) || [];
       for (const block of btEtMatches) {
-        // Tj operator
         const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g) || [];
         for (const tj of tjMatches) {
           const match = tj.match(/\(([^)]*)\)/);
-          if (match && match[1].length > 0) {
-            extractedText += match[1].replace(/\\n/g, ' ') + ' ';
-          }
-        }
-        
-        // TJ operator (array of strings)
-        const tjArrayMatches = block.match(/\[(.*?)\]\s*TJ/g) || [];
-        for (const tjArray of tjArrayMatches) {
-          const stringParts = tjArray.match(/\(([^)]*)\)/g) || [];
-          for (const part of stringParts) {
-            const text = part.slice(1, -1).replace(/\\n/g, ' ');
-            if (text.length > 0) {
-              extractedText += text;
-            }
-          }
-          extractedText += ' ';
+          if (match?.[1]) extractedText += match[1] + ' ';
         }
       }
-      
-      // Method 3: Look for continuous readable text sequences (fallback)
-      if (extractedText.length < 200) {
-        const readableSequences = content.match(/[A-Za-zäöüÄÖÜß][A-Za-zäöüÄÖÜß0-9\s.,;:!?-]{20,}/g) || [];
-        for (const seq of readableSequences) {
-          // Filter out PDF syntax
-          if (!seq.includes('obj') && !seq.includes('endobj') && !seq.includes('stream') && 
-              !seq.includes('/') && !seq.includes('<<') && !seq.includes('>>')) {
-            extractedText += seq + ' ';
-          }
-        }
-      }
-      
-      // Clean up the extracted text
-      return extractedText
-        .replace(/\s+/g, ' ')
-        .replace(/[^\x20-\x7E\xC0-\xFF]/g, '') // Keep printable chars + extended latin
-        .trim();
+
+      return normalizeExtractedText(extractedText);
     }
 
     // Function to extract text content from documents
@@ -230,16 +202,21 @@ serve(async (req) => {
         if (fileType === 'pdf' || fileName.endsWith('.pdf')) {
           const arrayBuffer = await fileData.arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
-          
-          const text = extractPdfText(bytes);
-          console.log(`PDF: ${text.length} Zeichen extrahiert`);
-          
-          if (text.length < 50) {
-            console.log(`Wenig Text aus PDF extrahiert - möglicherweise gescanntes Dokument`);
-            return `[Gescanntes PDF - Textextraktion begrenzt. Beschreibung: ${doc.description || 'Keine Beschreibung verfügbar'}]`;
+
+          let text = '';
+          try {
+            text = await extractPdfTextWithPdfJs(bytes);
+          } catch (e) {
+            console.error('pdf.js Extraktion fehlgeschlagen:', e);
           }
-          
-          return text.substring(0, 15000);
+
+          if (!isUsableText(text)) {
+            const fallback = extractPdfTextHeuristic(bytes);
+            if (isUsableText(fallback)) text = fallback;
+          }
+
+          console.log(`PDF: ${text.length} Zeichen extrahiert (usable: ${isUsableText(text)})`);
+          return isUsableText(text) ? text.substring(0, 15000) : '';
         }
 
         // For other file types, return description as fallback
