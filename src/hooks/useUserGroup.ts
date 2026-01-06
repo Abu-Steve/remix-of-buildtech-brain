@@ -10,17 +10,25 @@ export function useUserGroup() {
     queryFn: async () => {
       if (!user) return null;
       
-      const { data, error } = await supabase
+      // First get the user's group_id from user_groups
+      const { data: userGroupData, error: userGroupError } = await supabase
         .from('user_groups')
-        .select(`
-          group_id,
-          groups (id, name, is_global)
-        `)
+        .select('group_id')
         .eq('user_id', user.id)
         .maybeSingle();
       
-      if (error) throw error;
-      return data?.groups || null;
+      if (userGroupError) throw userGroupError;
+      if (!userGroupData) return null;
+      
+      // Then get the group details
+      const { data: groupData, error: groupError } = await supabase
+        .from('groups')
+        .select('id, name, is_global')
+        .eq('id', userGroupData.group_id)
+        .single();
+      
+      if (groupError) throw groupError;
+      return groupData;
     },
     enabled: !!user,
   });
