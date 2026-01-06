@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as pdfjsLib from "https://esm.sh/pdfjs-dist@4.10.38/legacy/build/pdf.mjs?deno";
+import { extractText } from "https://esm.sh/unpdf@0.12.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -119,32 +119,15 @@ serve(async (req) => {
       return words >= 15;
     }
 
-    async function extractPdfTextWithPdfJs(bytes: Uint8Array): Promise<string> {
-      const getDocument = (pdfjsLib as any).getDocument;
-      if (typeof getDocument !== 'function') {
-        throw new Error('pdfjs getDocument nicht verfügbar');
+    async function extractPdfTextWithUnpdf(bytes: Uint8Array): Promise<string> {
+      try {
+        const result = await extractText(bytes, { mergePages: true });
+        const text = result.text as string;
+        return normalizeExtractedText(text || '');
+      } catch (e) {
+        console.error('unpdf Extraktion fehlgeschlagen:', e);
+        return '';
       }
-
-      const loadingTask = getDocument({ data: bytes, disableWorker: true });
-      const pdf = await loadingTask.promise;
-
-      const maxPages = Math.min(Number(pdf.numPages || 0), 12);
-      let out = '';
-
-      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const tc = await page.getTextContent();
-        const items = (tc?.items || []) as any[];
-        const pageText = items
-          .map((it) => (typeof it?.str === 'string' ? it.str : ''))
-          .filter(Boolean)
-          .join(' ');
-
-        if (pageText) out += pageText + '\n';
-        if (out.length > 30000) break;
-      }
-
-      return normalizeExtractedText(out);
     }
 
     // Fallback (heuristisch) - nur wenn pdf.js nichts Sinnvolles liefert
@@ -205,9 +188,9 @@ serve(async (req) => {
 
           let text = '';
           try {
-            text = await extractPdfTextWithPdfJs(bytes);
+            text = await extractPdfTextWithUnpdf(bytes);
           } catch (e) {
-            console.error('pdf.js Extraktion fehlgeschlagen:', e);
+            console.error('unpdf Extraktion fehlgeschlagen:', e);
           }
 
           if (!isUsableText(text)) {
