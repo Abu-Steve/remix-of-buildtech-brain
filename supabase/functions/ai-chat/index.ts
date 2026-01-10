@@ -379,7 +379,7 @@ serve(async (req) => {
           id: doc.id,
           title: doc.title,
           type: doc.type,
-          excerpt: documentContent ? documentContent.substring(0, 200) : (doc.description?.substring(0, 100) || 'Dokument aus der BuildTech Wissensdatenbank')
+          excerpt: documentContent ? documentContent.substring(0, 200) : (doc.description?.substring(0, 100) || 'Dokument aus der Builtech Wissensdatenbank')
         });
       }
     } else {
@@ -390,7 +390,7 @@ serve(async (req) => {
     const allSources = [...documentSources, ...forumSources];
 
     // System prompt - prioritize database and forum, then external
-    const systemPrompt = `Du bist der BuildTech KI-Assistent für Dokumenten- und Wissensmanagement im Bauwesen.
+    const systemPrompt = `Du bist der Builtech KI-Assistent für Dokumenten- und Wissensmanagement im Bauwesen.
 
 KRITISCHE REGELN - STRIKT BEFOLGEN:
 

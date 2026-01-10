@@ -51,7 +51,7 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
               <Sparkles className="w-8 h-8 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              BuildTech KI-Assistent
+              Builtech KI-Assistent
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md">
               Fragen Sie mich zu Ihren Dokumenten und Baunormen. 
