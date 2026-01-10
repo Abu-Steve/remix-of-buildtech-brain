@@ -13,8 +13,8 @@ import { Loader2, UserPlus, Users, Shield, Trash2, Pencil } from 'lucide-react';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 
-const emailSchema = z.string().email('Invalid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const emailSchema = z.string().email('Ungültige E-Mail-Adresse');
+const passwordSchema = z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein');
 
 type UserDepartment = 'office' | 'manager' | 'craftsman';
 type UserRole = 'employee' | 'champion' | 'administrator';
@@ -113,7 +113,7 @@ export function AdminUserManagement() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('User created successfully');
+      toast.success('Benutzer erfolgreich erstellt');
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
       setEmail('');
       setPassword('');
@@ -249,24 +249,24 @@ export function AdminUserManagement() {
     try {
       emailSchema.parse(email);
     } catch {
-      toast.error('Please enter a valid email address');
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       return;
     }
 
     try {
       passwordSchema.parse(password);
     } catch {
-      toast.error('Password must be at least 6 characters');
+      toast.error('Passwort muss mindestens 6 Zeichen lang sein');
       return;
     }
 
     if (!name.trim()) {
-      toast.error('Please enter the user name');
+      toast.error('Bitte geben Sie einen Namen ein');
       return;
     }
 
     if (!groupId) {
-      toast.error('Please select a company');
+      toast.error('Bitte wählen Sie ein Unternehmen aus');
       return;
     }
 
@@ -279,17 +279,17 @@ export function AdminUserManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />
-            Create New User
+            Neuen Benutzer erstellen
           </CardTitle>
           <CardDescription>
-            Add a new user and assign them to a company
+            Fügen Sie einen neuen Benutzer hinzu und weisen Sie ihn einem Unternehmen zu
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Vollständiger Name</Label>
                 <Input
                   id="name"
                   placeholder="Max Mustermann"
@@ -312,7 +312,7 @@ export function AdminUserManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Passwort</Label>
                 <Input
                   id="password"
                   type="password"
@@ -324,16 +324,16 @@ export function AdminUserManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+                <Label htmlFor="company">Unternehmen</Label>
                 <Select value={groupId} onValueChange={setGroupId} disabled={groupsLoading || createUserMutation.isPending}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select company..." />
+                    <SelectValue placeholder="Unternehmen wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     {groups?.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name}
-                        {group.is_global && ' (All access)'}
+                        {group.is_global && ' (Vollzugriff)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -341,7 +341,7 @@ export function AdminUserManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">Rolle</Label>
                 <Select value={role} onValueChange={(v) => setRole(v as UserRole)} disabled={createUserMutation.isPending}>
                   <SelectTrigger>
                     <SelectValue />
@@ -373,12 +373,12 @@ export function AdminUserManagement() {
               {createUserMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  Erstellen...
                 </>
               ) : (
                 <>
                   <UserPlus className="w-4 h-4" />
-                  Create User
+                  Benutzer erstellen
                 </>
               )}
             </Button>
@@ -390,10 +390,10 @@ export function AdminUserManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            All Users
+            Alle Benutzer
           </CardTitle>
           <CardDescription>
-            Manage existing users and their access
+            Verwalten Sie bestehende Benutzer und deren Zugriffsrechte
           </CardDescription>
         </CardHeader>
         <CardContent>
