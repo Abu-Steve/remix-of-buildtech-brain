@@ -442,7 +442,7 @@ ANTWORTFORMAT:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 4000,
+        max_completion_tokens: 4000,
       }),
     });
 
