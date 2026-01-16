@@ -68,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Builtech</h1>
+              <h1 className="text-lg font-bold text-foreground">Builtech Brain</h1>
               <p className="text-xs text-muted-foreground">Wissensdatenbank</p>
             </div>
           </Link>
