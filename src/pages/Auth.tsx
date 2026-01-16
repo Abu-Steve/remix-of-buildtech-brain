@@ -76,7 +76,7 @@ export default function Auth() {
             <div className="w-14 h-14 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
               <HardHat className="w-8 h-8" />
             </div>
-            <span className="text-3xl font-bold">Builtech</span>
+            <span className="text-3xl font-bold">Builtech Brain</span>
           </div>
           <h1 className="text-4xl font-bold mb-4">Wissensdatenbank</h1>
           <p className="text-xl opacity-90 max-w-md">
@@ -93,7 +93,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-xl bg-gradient-hero flex items-center justify-center">
               <HardHat className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">Builtech</span>
+            <span className="text-2xl font-bold text-foreground">Builtech Brain</span>
           </div>
 
           <div className="text-center mb-8">
