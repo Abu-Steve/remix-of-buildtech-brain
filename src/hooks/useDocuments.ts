@@ -64,9 +64,11 @@ export function useDocuments(statusFilter?: string) {
         const uploaderIds = [...new Set(documents.map(d => d.uploaded_by).filter(Boolean))];
         
         if (uploaderIds.length > 0) {
+          // Use profiles_public view for limited profile info (name, avatar only)
+          // This avoids exposing sensitive data like emails to all users
           const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, name, email, avatar_url')
+            .from('profiles_public')
+            .select('id, name, avatar_url')
             .in('id', uploaderIds);
 
           // Map profiles to documents
