@@ -53,12 +53,14 @@ export function AdminUserManagement() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
+  // Fetch only non-global groups (companies) for the dropdown
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['groups'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('groups')
         .select('*')
+        .eq('is_global', false)
         .order('name');
       if (error) throw error;
       return data;
