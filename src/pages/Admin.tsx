@@ -3,9 +3,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useUserRole';
 import { useEffect } from 'react';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
+import { AdminCompanyManagement } from '@/components/admin/AdminCompanyManagement';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Loader2, ShieldAlert, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -48,7 +50,18 @@ export default function Admin() {
         <h1 className="text-3xl font-bold">Admin-Bereich</h1>
         <p className="text-muted-foreground">Benutzer und Systemeinstellungen verwalten</p>
       </div>
-      <AdminUserManagement />
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="users">Benutzerverwaltung</TabsTrigger>
+          <TabsTrigger value="companies">Unternehmen verwalten</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users">
+          <AdminUserManagement />
+        </TabsContent>
+        <TabsContent value="companies">
+          <AdminCompanyManagement />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }
