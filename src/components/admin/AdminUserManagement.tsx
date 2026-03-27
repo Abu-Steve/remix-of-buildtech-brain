@@ -53,12 +53,14 @@ export function AdminUserManagement() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
+  // Fetch only non-global groups (companies) for the dropdown
   const { data: groups, isLoading: groupsLoading } = useQuery({
     queryKey: ['groups'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('groups')
         .select('*')
+        .eq('is_global', false)
         .order('name');
       if (error) throw error;
       return data;
@@ -325,19 +327,24 @@ export function AdminUserManagement() {
 
               <div className="space-y-2">
                 <Label htmlFor="company">Unternehmen</Label>
-                <Select value={groupId} onValueChange={setGroupId} disabled={groupsLoading || createUserMutation.isPending}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unternehmen wählen..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups?.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name}
-                        {group.is_global && ' (Vollzugriff)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {groups && groups.length > 0 ? (
+                  <Select value={groupId} onValueChange={setGroupId} disabled={groupsLoading || createUserMutation.isPending}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unternehmen wählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">
+                    Noch keine Unternehmen vorhanden. Bitte zuerst ein Unternehmen anlegen.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
