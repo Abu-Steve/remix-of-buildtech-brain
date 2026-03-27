@@ -34,10 +34,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY ist nicht konfiguriert');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY ist nicht konfiguriert');
     }
 
     // Validate user token
@@ -427,22 +427,21 @@ ANTWORTFORMAT:
 - Bei kombinierten Antworten: Nenne beide Quellentypen
 - Bei externen Antworten: Beginne mit "⚠️ Externe Quelle" und erkläre, warum die internen Quellen keine Antwort liefern konnten. Nenne dann am Ende IMMER die verwendeten externen Quellen mit "🌐 Externe Quellen: [Liste der URLs oder Quellenangaben wie z.B. DIN-Normen, Gesetze, Richtlinien]"`;
 
-    // Call OpenAI API
-    console.log('Rufe OpenAI API auf...');
+    // Call Lovable AI Gateway
+    console.log('Rufe Lovable AI Gateway auf...');
     
-    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_completion_tokens: 4000,
       }),
     });
 
